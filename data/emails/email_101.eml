@@ -1,0 +1,23 @@
+Message-ID: <bec-4410-001@acme-industria1.com>
+From: controller@acme-industria1.com
+To: ap@sentinel-corp.com
+Subject:
+ URGENT: Bank Account Change for Acme Industrial - Action Required Immediately
+Date:
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hi AP team,
+
+This is an urgent update. We have changed our bank. Please wire today to avoi=
+d delays. Immediate action required.
+
+New account: GB29 NWBK 6016 9999 8888 77
+
+Regards,
+Acme Controller
+
+--FRAUD_SENTINEL_FACTS:v1:{"case_id":"C-001","from_domain":"acme-industria1.c=
+om","bank_change_request":true,"requested_bank_account":"GB29 NWBK 6016 9999 =
+8888 77","invoice_number":null}--

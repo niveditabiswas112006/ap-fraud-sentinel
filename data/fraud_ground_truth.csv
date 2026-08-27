@@ -1,0 +1,11 @@
+caseId,invoiceNumber,fraudType,isFraud,expectedSignal
+C-001,INV-2026-4410,BEC,True,domain_lookalike+timing+amount_anomaly
+C-002,INV-2026-1088,fake_invoice,True,first_time_vendor+amount_anomaly
+C-003,INV-2026-1091,invoice_manipulation,True,duplicate+amount_anomaly
+C-004,INV-2026-1195,invoice_manipulation,True,threshold_skirting
+C-005,INV-2026-2207,account_takeover,True,timing+domain_lookalike
+C-006,INV-2026-3319,fake_invoice,True,first_time_vendor
+C-007,INV-8812,fake_invoice,True,malformed_id
+C-008,INV-8812B,invoice_manipulation,True,duplicate
+C-009,CORRUPT-9901,malformed_input,True,schema_validation_fail
+C-010,CORRUPT-9902,malformed_input,True,schema_validation_fail

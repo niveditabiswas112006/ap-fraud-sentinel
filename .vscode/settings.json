@@ -1,0 +1,5 @@
+{
+  "rocketride.development.connectionMode": "local",
+  "rocketride.development.local.engineVersion": "latest",
+  "rocketride.development.local.debugOutput": true
+}

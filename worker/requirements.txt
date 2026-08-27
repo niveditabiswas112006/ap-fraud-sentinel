@@ -1,0 +1,11 @@
+# worker/ requirements for the AP Payment Fraud Sentinel worker.
+# Pure stdlib + aiohttp + rocketride. No z-ai-web-dev-sdk (that stays TS-side).
+# Optional: python-whois for richer domain enrichment (we implement Levenshtein
+# in-process to avoid the dep).
+
+rocketride==1.3.0
+aiohttp>=3.10
+# Required for .pdf invoice text extraction (real-world PDFs have no marker).
+pdfplumber>=0.11
+# Optional; not required for the demo path:
+# python-whois

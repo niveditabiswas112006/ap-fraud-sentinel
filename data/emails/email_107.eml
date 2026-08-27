@@ -1,0 +1,19 @@
+Message-ID: <bec-8812-007@valley-forgesteel.com>
+From: ap@valley-forgesteel.com
+To: ap@sentinel-corp.com
+Subject: Invoice INV-8812 for $4,500
+Date:
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+Please process invoice INV-8812 for $4,500. Net 30 terms.
+
+Regards,
+Valley Forge Steel
+
+--FRAUD_SENTINEL_FACTS:v1:{"case_id":"C-007","from_domain":"valley-forgesteel=
+.com","bank_change_request":false,"requested_bank_account":null,"invoice_numb=
+er":"INV-8812"}--

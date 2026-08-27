@@ -1,0 +1,169 @@
+{
+  "components": [
+    {
+      "id": "webhook_1",
+      "provider": "webhook",
+      "name": "Webhook Ingestion Node",
+      "description": "Receives raw invoice image files via HTTP POST.",
+      "config": {
+        "path": "/intake",
+        "methods": [
+          "POST"
+        ],
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "webhook"
+      },
+      "ui": {
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "cleanup_1",
+      "provider": "cleanup",
+      "name": "Image Preprocessor",
+      "description": "Normalizes invoice image contrast and removes noise artifacts.",
+      "config": {
+        "strip_pii": false,
+        "normalize_whitespace": true,
+        "parameters": {}
+      },
+      "ui": {
+        "position": {
+          "x": 260,
+          "y": 260
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      },
+      "input": [
+        {
+          "lane": "image",
+          "from": "webhook_1"
+        }
+      ]
+    },
+    {
+      "id": "ocr_1",
+      "provider": "ocr",
+      "name": "OCR Reader",
+      "description": "Extracts raw text from preprocessed invoice image.",
+      "config": {
+        "model": "tesseract",
+        "lang": "eng",
+        "parameters": {}
+      },
+      "ui": {
+        "position": {
+          "x": 480,
+          "y": 200
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "image",
+          "from": "cleanup_1"
+        },
+        {
+          "lane": "image",
+          "from": "webhook_1"
+        }
+      ]
+    },
+    {
+      "id": "extract_data_1",
+      "provider": "extract_data",
+      "name": "Invoice Data Extractor",
+      "description": "Extracts structured invoice facts (vendor, invoice date, due date, amount, bank account) using LLM reasoning.",
+      "config": {
+        "schema": "invoice_v1",
+        "parameters": {}
+      },
+      "ui": {
+        "position": {
+          "x": 700,
+          "y": 200
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "text",
+          "from": "ocr_1"
+        }
+      ]
+    },
+    {
+      "id": "llm_openai_1",
+      "provider": "llm_openai",
+      "name": "LLM Engine",
+      "description": "LLM model powering structured data extraction.",
+      "config": {
+        "profile": "openai-4o",
+        "openai-4o": {
+          "apikey": "${ROCKETRIDE_OPENAI_KEY}"
+        },
+        "parameters": {}
+      },
+      "ui": {
+        "position": {
+          "x": 700,
+          "y": 360
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "extract_data_1"
+        }
+      ]
+    },
+    {
+      "id": "response_answers_1",
+      "provider": "response_answers",
+      "name": "Return Answers",
+      "description": "Returns extracted invoice facts to client.",
+      "config": {
+        "laneName": "answers",
+        "parameters": {}
+      },
+      "ui": {
+        "position": {
+          "x": 920,
+          "y": 200
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "extract_data_1"
+        }
+      ]
+    }
+  ],
+  "name": "Stage 02 — Data Extraction Pipeline",
+  "description": "Extracts raw text via OCR, cleans image, extracts structured invoice facts using an LLM, and returns extracted answers.",
+  "version": 1,
+  "source": "webhook_1",
+  "project_id": "8fb70e78-a352-4cb9-844f-ef3ba46e9140",
+  "isLocked": false,
+  "snapToGrid": true,
+  "snapGridSize": [
+    10,
+    10
+  ],
+  "docRevision": 3
+}

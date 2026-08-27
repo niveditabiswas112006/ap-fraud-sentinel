@@ -1,0 +1,147 @@
+{
+  "components": [
+    {
+      "id": "webhook_1",
+      "provider": "webhook",
+      "name": "Webhook Ingestion Node",
+      "description": "Receives raw PDF invoice and EML email attachments via HTTP POST.",
+      "config": {
+        "path": "/intake",
+        "methods": ["POST"],
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "webhook"
+      },
+      "ui": {
+        "position": { "x": 40, "y": 200 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "cleanup_1",
+      "provider": "cleanup",
+      "name": "Payload Cleaner",
+      "description": "Strips invalid tags and normalizes raw document whitespace.",
+      "input": [
+        {
+          "from": "webhook_1",
+          "lane": "tags"
+        }
+      ],
+      "config": {
+        "strip_pii": false,
+        "normalize_whitespace": true,
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 260, "y": 200 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "parse_1",
+      "provider": "parse",
+      "name": "Document & MIME Parser",
+      "description": "Parses document structure and extracts raw text contents.",
+      "input": [
+        {
+          "from": "cleanup_1",
+          "lane": "tags"
+        }
+      ],
+      "config": {
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 480, "y": 200 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "extract_data_1",
+      "provider": "extract_data",
+      "name": "Document Intake Classifier",
+      "description": "Classifies document type (Invoice PDF vs Vendor Email EML) using LLM reasoning.",
+      "input": [
+        {
+          "from": "parse_1",
+          "lane": "text"
+        }
+      ],
+      "config": {
+        "schema": "intake_v1",
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 700, "y": 200 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "llm_openai_1",
+      "provider": "llm_openai",
+      "name": "LLM Engine",
+      "description": "LLM model powering document intake classification.",
+      "control": [
+        {
+          "classType": "llm",
+          "from": "extract_data_1"
+        }
+      ],
+      "config": {
+        "profile": "openai-4o",
+        "openai-4o": {
+          "apikey": "${ROCKETRIDE_OPENAI_KEY}"
+        },
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 700, "y": 360 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "response_answers_1",
+      "provider": "response_answers",
+      "name": "Return Intake Status",
+      "description": "Returns intake classification and queued case status to client.",
+      "input": [
+        {
+          "from": "extract_data_1",
+          "lane": "answers"
+        }
+      ],
+      "config": {
+        "laneName": "answers",
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 920, "y": 200 },
+        "measured": { "width": 160, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    }
+  ],
+  "name": "Stage 01 — Case Intake Pipeline",
+  "description": "Ingests incoming PDF invoices and EML emails via webhook, cleans payload, parses document text, classifies document type via LLM, and returns intake status.",
+  "version": 1,
+  "source": "webhook_1",
+  "project_id": "71bd3b36-422a-4cb7-9340-247ec7d837e1",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  }
+}

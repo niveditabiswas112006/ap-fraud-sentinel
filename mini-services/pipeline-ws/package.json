@@ -1,0 +1,11 @@
+{
+  "name": "pipeline-ws",
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "node index.js"
+  }
+}

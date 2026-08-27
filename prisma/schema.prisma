@@ -1,0 +1,120 @@
+// AP Payment Fraud Sentinel — Prisma schema (SQLite)
+// Mirrors the data model described in the build prompt §3 (dataset) and §4 (pipeline).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Vendor master (§3.1) — 60 rows, ground truth for known_phone / known_bank_account ----
+model Vendor {
+  vendorId              String   @id // V-001 .. V-060
+  legalName             String
+  registeredDomain      String
+  knownPhone            String   // E.164, the number the verification call dials
+  knownBankAccount      String   // IBAN or domestic, baseline
+  bankAccountAddedDate  String   // ISO date
+  firstInvoiceDate      String   // ISO date
+  address               String
+  contactEmail          String
+  taxId                 String
+
+  payments    PaymentHistory[]
+  cases       Case[]
+}
+
+// ---- Payment history (§3.2) — ~480 rows, the anomaly detector's training data ----
+model PaymentHistory {
+  id                Int      @id @default(autoincrement())
+  paymentId         String   @unique // P-0001 ..
+  vendorId          String
+  invoiceNumber     String
+  paidDate          String   // ISO date
+  amountUsd         Float
+  currencyOriginal  String
+
+  vendor            Vendor   @relation(fields: [vendorId], references: [vendorId])
+}
+
+// ---- Ground truth (§3.3) — 10 rows, held out, used to score the detector ----
+model FraudGroundTruth {
+  id               Int     @id @default(autoincrement())
+  caseId           String
+  invoiceNumber    String
+  fraudType        String
+  isFraud          Boolean
+  expectedSignal   String
+}
+
+// ---- Cases (the pipeline's working rows) ----
+model Case {
+  caseId                  String   @id // C-0001 ..
+  runId                   String?
+  vendorId                String?  // null when first-time / fake vendor
+  vendorName              String   // extracted name (may differ from master)
+  invoiceNumber           String
+  sourcePath             String   // dataset path or upload id
+  kind                    String   // 'invoice' | 'email'
+  status                  String   // queued|extracted|grounded|scored|reviewed|verified|closed|quarantined
+  amountUsd               Float    @default(0)
+  currency                String   @default("USD")
+  invoiceDate             String?
+  dueDate                 String?
+  senderDomain            String?  // email sender domain
+  bankChangeRequestDate   String?  // when the (suspicious) bank-change email was sent
+  requestedBankAccount    String?  // the new account the email asks to switch to
+  emailBody               String?  // raw/normalized email body excerpt
+  factsJson               String   // JSON: full extracted case_facts
+  signalsJson             String   // JSON: array of {name,score,weight,evidence,fired}
+  riskScore               Float    @default(0) // 0.0-1.0
+  recommendation          String?  // 'hold' | 'pass'
+  evidencePackJson        String   // JSON: assembled evidence pack
+  narrative               String?  // BEC analyst narrative
+  callTranscript          String?  // transcribed verification call
+  callAudioUrl            String?  // generated TTS audio (fallback for Bland AI)
+  verificationResult      String?  // confirmed | denied | unclear
+  decision                String?  // release | hold | escalate
+  approver                String?
+  decisionReason          String?
+  decisionAt              String?
+  fraudType               String?  // filled from ground truth for scoring display
+  isFraud                 Boolean? @default(false)
+  createdAt               String   @default(dbgenerated("(datetime('now'))"))
+  updatedAt               String   @default(dbgenerated("(datetime('now'))"))
+
+  vendor                  Vendor?  @relation(fields: [vendorId], references: [vendorId])
+  decisions               Decision[]
+}
+
+// ---- Controller decisions (audit trail, §4 Stage 07) ----
+model Decision {
+  id         Int      @id @default(autoincrement())
+  caseId     String
+  approver   String
+  decision   String   // release | hold | escalate
+  reason     String
+  timestamp  String   @default(dbgenerated("(datetime('now'))"))
+
+  case       Case     @relation(fields: [caseId], references: [caseId])
+}
+
+// ---- Batch runs (§5 runs page) ----
+model Run {
+  runId            String   @id
+  startedAt        String
+  endedAt          String?
+  status           String   // running | complete | failed
+  casesProcessed   Int      @default(0)
+  casesHeld        Int      @default(0)
+  fraudCaught      Int      @default(0)
+  amountSavedUsd   Float    @default(0)
+  signalsCostUsd   Float    @default(0)
+  llmCostUsd       Float    @default(0)
+  callCostUsd      Float    @default(0)
+  totalUsd         Float    @default(0)
+  durationS        Float    @default(0)
+}

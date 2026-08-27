@@ -1,0 +1,19 @@
+Message-ID: <bec-1195-004@copper-ridgeeng.com>
+From: ap@copper-ridgeeng.com
+To: ap@sentinel-corp.com
+Subject: Invoice INV-2026-1195 for $9,950
+Date:
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hello,
+
+Please process invoice INV-2026-1195 for $9,950. Net 30 terms.
+
+Regards,
+Copper Ridge Engineering
+
+--FRAUD_SENTINEL_FACTS:v1:{"case_id":"C-004","from_domain":"copper-ridgeeng.c=
+om","bank_change_request":false,"requested_bank_account":null,"invoice_number=
+":"INV-2026-1195"}--

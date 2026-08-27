@@ -1,0 +1,126 @@
+{
+  "components": [
+    {
+      "id": "chat_1",
+      "provider": "chat",
+      "name": "Case Audit Input",
+      "description": "Ingests case review question and risk evidence.",
+      "config": {
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "chat"
+      },
+      "ui": {
+        "position": { "x": 40, "y": 200 },
+        "measured": { "width": 170, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "agent_rocketride_1",
+      "provider": "agent_rocketride",
+      "name": "3-Agent Swarm Orchestrator",
+      "description": "Orchestrates BEC Analyst, Vendor Verifier, and Case Builder subagents to synthesize risk findings.",
+      "input": [
+        {
+          "from": "chat_1",
+          "lane": "questions"
+        }
+      ],
+      "config": {
+        "instructions": [
+          "Synthesize findings from BEC Analyst, Vendor Verifier, and Case Builder. Arbitrate recommendation with majority vote."
+        ],
+        "max_waves": 10,
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 270, "y": 200 },
+        "measured": { "width": 170, "height": 86 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "llm_openai_1",
+      "provider": "llm_openai",
+      "name": "Agent LLM Reasoning Engine",
+      "description": "LLM model powering agent swarm reasoning.",
+      "control": [
+        {
+          "classType": "llm",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "config": {
+        "profile": "openai-4o",
+        "openai-4o": {
+          "apikey": "${ROCKETRIDE_OPENAI_KEY}"
+        },
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 170, "y": 360 },
+        "measured": { "width": 170, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "memory_internal_1",
+      "provider": "memory_internal",
+      "name": "Swarm Working Memory",
+      "description": "Stores agent wave context and intermediate evidence state.",
+      "control": [
+        {
+          "classType": "memory",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "config": {
+        "type": "memory_internal",
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 370, "y": 360 },
+        "measured": { "width": 170, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "response_answers_1",
+      "provider": "response_answers",
+      "name": "Return Answers",
+      "description": "Returns synthesized agent narrative and recommendations to client.",
+      "input": [
+        {
+          "from": "agent_rocketride_1",
+          "lane": "answers"
+        }
+      ],
+      "config": {
+        "laneName": "answers",
+        "parameters": {}
+      },
+      "ui": {
+        "position": { "x": 500, "y": 200 },
+        "measured": { "width": 170, "height": 66 },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    }
+  ],
+  "name": "Stage 05 — Multi-Agent Intelligence Swarm Pipeline",
+  "description": "Orchestrates an autonomous AI Agent Swarm (BEC Analyst, Vendor Verifier, Case Builder) with LLM reasoning and internal working memory.",
+  "version": 1,
+  "source": "chat_1",
+  "project_id": "df3c34e0-ce3a-40b1-bd9d-6fa1d929ceaa",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  }
+}

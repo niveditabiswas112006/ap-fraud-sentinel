@@ -1,0 +1,57 @@
+{
+  // AP Payment Fraud Sentinel — VS Code tasks.
+  // Open the project folder in VS Code, then Terminal ▸ Run Task…
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1 · Setup (one-time)",
+      "detail": "Install deps, create + seed the SQLite DB",
+      "type": "shell",
+      "command": "./setup.sh",
+      "windows": { "command": ".\\setup.bat" },
+      "problemMatcher": []
+    },
+    {
+      "label": "2 · Start everything (3 services)",
+      "detail": "Trace WS :3003 + Worker :3030 + Dashboard :3000",
+      "type": "shell",
+      "command": "./start.sh",
+      "windows": { "command": ".\\start.bat" },
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "3 · Dashboard only",
+      "detail": "next dev -p 3000",
+      "type": "shell",
+      "command": "npx next dev -p 3000",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "3 · Pipeline worker only",
+      "detail": "python worker/main.py — port 3030",
+      "type": "shell",
+      "command": "python3 worker/main.py",
+      "windows": { "command": "python worker/main.py" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "3 · Trace WS only",
+      "detail": "node mini-services/pipeline-ws/index.js — port 3003",
+      "type": "shell",
+      "command": "node mini-services/pipeline-ws/index.js",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "4 · Reseed reference CSVs",
+      "detail": "Reload data/*.csv into the DB after editing your dataset",
+      "type": "shell",
+      "command": "python3 scripts/seed_db.py",
+      "windows": { "command": "python scripts/seed_db.py" },
+      "problemMatcher": []
+    }
+  ]
+}
