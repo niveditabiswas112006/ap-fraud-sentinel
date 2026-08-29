@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Jasper Manufacturing LLC. No changes to our bank account or remittance details. Please direct any questions to ap@jaspermanufacturing.com.\n\nRegards,\nJasper Manufacturing LLC",
+  "case_id": "E-0011",
+  "date": "2026-01-14T12:00:00Z",
+  "from": "ap@jaspermanufacturing.com",
+  "from_domain": "jaspermanufacturing.com",
+  "message_id": "<legit-0011@jaspermanufacturing.com>",
+  "requested_bank_account": null,
+  "subject": "Question about invoice INV-2026-5049",
+  "to": "ap@sentinel-corp.com"
+}

@@ -1,0 +1,25 @@
+{
+  "amount_usd": 28568.49,
+  "bank_account": "GB29 NWBK 6016 0059 0059 59",
+  "case_id": "C-0044",
+  "currency": "USD",
+  "due_date": "2026-03-12",
+  "invoice_date": "2026-02-10",
+  "invoice_number": "INV-2026-5044",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 13527.2
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 15041.29
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@northvaleindustrial.com",
+  "vendor_id": "V-059",
+  "vendor_name": "Northvale Industrial Co"
+}

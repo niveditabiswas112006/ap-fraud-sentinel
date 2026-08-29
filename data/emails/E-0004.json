@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Pinnacle Fabrication Co. No changes to our bank account or remittance details. Please direct any questions to ap@pinnaclefabrication.com.\n\nRegards,\nPinnacle Fabrication Co",
+  "case_id": "E-0004",
+  "date": "2026-06-10T14:00:00Z",
+  "from": "ap@pinnaclefabrication.com",
+  "from_domain": "pinnaclefabrication.com",
+  "message_id": "<legit-0004@pinnaclefabrication.com>",
+  "requested_bank_account": null,
+  "subject": "Statement of Account - April 2026",
+  "to": "ap@sentinel-corp.com"
+}

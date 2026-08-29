@@ -1,0 +1,30 @@
+{
+  "amount_usd": 4731.86,
+  "bank_account": "GB29 NWBK 6016 0006 0006 06",
+  "case_id": "C-0034",
+  "currency": "USD",
+  "due_date": "2026-02-11",
+  "invoice_date": "2026-01-12",
+  "invoice_number": "INV-2026-5034",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 1932.53
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 974.11
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 1825.22
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@deltaengineering.com",
+  "vendor_id": "V-006",
+  "vendor_name": "Delta Engineering Systems"
+}

@@ -1,0 +1,30 @@
+{
+  "amount_usd": 32646.58,
+  "bank_account": "GB29 NWBK 6016 0042 0042 42",
+  "case_id": "C-0087",
+  "currency": "USD",
+  "due_date": "2026-07-16",
+  "invoice_date": "2026-06-16",
+  "invoice_number": "INV-2026-5087",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6297.14
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 12910.89
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 13438.55
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@elmsidefabrication.com",
+  "vendor_id": "V-042",
+  "vendor_name": "Elmside Fabrication Co"
+}

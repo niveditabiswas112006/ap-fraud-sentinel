@@ -1,0 +1,20 @@
+{
+  "amount_usd": 8805.44,
+  "bank_account": "GB29 NWBK 6016 0001 0001 01",
+  "case_id": "C-0116",
+  "currency": "USD",
+  "due_date": "2026-08-09",
+  "invoice_date": "2026-07-10",
+  "invoice_number": "INV-2026-5116",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 8805.44
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@acmeindustrial.com",
+  "vendor_id": "V-001",
+  "vendor_name": "Acme Industrial Supply"
+}

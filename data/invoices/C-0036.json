@@ -1,0 +1,30 @@
+{
+  "amount_usd": 7349.06,
+  "bank_account": "GB29 NWBK 6016 0032 0032 32",
+  "case_id": "C-0036",
+  "currency": "USD",
+  "due_date": "2026-09-15",
+  "invoice_date": "2026-08-16",
+  "invoice_number": "INV-2026-5036",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2338.7
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 2621.87
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 2388.49
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@silverlakecomponents.com",
+  "vendor_id": "V-032",
+  "vendor_name": "Silverlake Components Co"
+}

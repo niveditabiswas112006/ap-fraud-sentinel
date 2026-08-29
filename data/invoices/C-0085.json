@@ -1,0 +1,25 @@
+{
+  "amount_usd": 11610.03,
+  "bank_account": "GB29 NWBK 6016 0036 0036 36",
+  "case_id": "C-0085",
+  "currency": "USD",
+  "due_date": "2026-07-17",
+  "invoice_date": "2026-06-17",
+  "invoice_number": "INV-2026-5085",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 3378.28
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 8231.75
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@westmarkindustrial.com",
+  "vendor_id": "V-036",
+  "vendor_name": "Westmark Industrial Supply"
+}

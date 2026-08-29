@@ -1,0 +1,20 @@
+{
+  "amount_usd": 6654.26,
+  "bank_account": "GB29 NWBK 6016 0013 0013 13",
+  "case_id": "C-0055",
+  "currency": "USD",
+  "due_date": "2026-02-10",
+  "invoice_date": "2026-01-11",
+  "invoice_number": "INV-2026-5055",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6654.26
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@kestrelengineering.com",
+  "vendor_id": "V-013",
+  "vendor_name": "Kestrel Engineering Co"
+}

@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hi,\n\nPlease process invoice INV-8812 for $4,500. Net 30 terms.\n\nRegards,\nValley Forge Steel",
+  "case_id": "C-007",
+  "date": "2026-08-02T09:00:00Z",
+  "from": "ap@valley-forgesteel.com",
+  "from_domain": "valley-forgesteel.com",
+  "message_id": "<bec-8812-007@valley-forgesteel.com>",
+  "requested_bank_account": null,
+  "subject": "Invoice INV-8812 for $4,500",
+  "to": "ap@sentinel-corp.com"
+}

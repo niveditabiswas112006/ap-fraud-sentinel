@@ -1,0 +1,30 @@
+{
+  "amount_usd": 24695.93,
+  "bank_account": "GB29 NWBK 6016 0023 0023 23",
+  "case_id": "C-0041",
+  "currency": "USD",
+  "due_date": "2026-05-05",
+  "invoice_date": "2026-04-05",
+  "invoice_number": "INV-2026-5041",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 8017.79
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 5621.94
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 11056.2
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ultramaxlogistics.com",
+  "vendor_id": "V-023",
+  "vendor_name": "Ultramax Logistics Co"
+}

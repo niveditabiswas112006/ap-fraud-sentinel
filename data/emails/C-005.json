@@ -1,0 +1,12 @@
+{
+  "bank_change_request": true,
+  "body": "Hi AP,\n\nUrgent update. We have changed our bank. Please wire today for invoice INV-2026-2207. Immediate action required.\n\nNew account: GB29 NWBK 6016 8888 0012 12\n\nRegards,\nJuniper AP",
+  "case_id": "C-005",
+  "date": "2026-07-03T09:00:00Z",
+  "from": "ap@juniper-componentinc.com",
+  "from_domain": "juniper-componentinc.com",
+  "message_id": "<bec-2207-005@juniper-componentinc.com>",
+  "requested_bank_account": "GB29 NWBK 6016 8888 0012 12",
+  "subject": "URGENT: Bank Account Change for Juniper Components - Wire Today",
+  "to": "ap@sentinel-corp.com"
+}

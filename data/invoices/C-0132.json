@@ -1,0 +1,20 @@
+{
+  "amount_usd": 22504.46,
+  "bank_account": "GB29 NWBK 6016 0049 0049 49",
+  "case_id": "C-0132",
+  "currency": "USD",
+  "due_date": "2026-09-09",
+  "invoice_date": "2026-08-10",
+  "invoice_number": "INV-2026-5132",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 22504.46
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@drakemanufacturing.com",
+  "vendor_id": "V-049",
+  "vendor_name": "Drake Manufacturing Co"
+}

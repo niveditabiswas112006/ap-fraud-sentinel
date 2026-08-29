@@ -1,0 +1,25 @@
+{
+  "amount_usd": 7687.79,
+  "bank_account": "GB29 NWBK 6016 0041 0041 41",
+  "case_id": "C-0104",
+  "currency": "USD",
+  "due_date": "2026-09-22",
+  "invoice_date": "2026-08-23",
+  "invoice_number": "INV-2026-5104",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 1899.02
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 5788.77
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@dawsonlogistics.com",
+  "vendor_id": "V-041",
+  "vendor_name": "Dawson Logistics Supply"
+}

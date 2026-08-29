@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello,\n\nPlease find our first invoice INV-2026-3319 for $7,200. Looking forward to a long relationship.\n\nRegards,\nYork Manufacturing",
+  "case_id": "C-006",
+  "date": "2026-03-16T10:00:00Z",
+  "from": "ap@york-manufacturingco.com",
+  "from_domain": "york-manufacturingco.com",
+  "message_id": "<bec-3319-006@york-manufacturingco.com>",
+  "requested_bank_account": null,
+  "subject": "First Invoice INV-2026-3319 - Please Process",
+  "to": "ap@sentinel-corp.com"
+}

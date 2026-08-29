@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hi,\n\nPlease find attached a revised invoice INV-2026-1091. Process immediately to avoid late fees.\n\nRegards,\nLakeside AP",
+  "case_id": "C-003",
+  "date": "2026-05-21T11:00:00Z",
+  "from": "ap@lakeside-componentsuply.com",
+  "from_domain": "lakeside-componentsuply.com",
+  "message_id": "<bec-1091-003@lakeside-componentsuply.com>",
+  "requested_bank_account": null,
+  "subject": "Revised Invoice INV-2026-1091 - Please Process Immediately",
+  "to": "ap@sentinel-corp.com"
+}

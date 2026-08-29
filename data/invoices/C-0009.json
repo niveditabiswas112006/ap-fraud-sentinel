@@ -1,0 +1,25 @@
+{
+  "amount_usd": 20773.39,
+  "bank_account": "GB29 NWBK 6016 0029 0029 29",
+  "case_id": "C-0009",
+  "currency": "USD",
+  "due_date": "2026-06-15",
+  "invoice_date": "2026-05-16",
+  "invoice_number": "INV-2026-5009",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 5384.75
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 15388.64
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@pinecrestlogistics.com",
+  "vendor_id": "V-029",
+  "vendor_name": "Pinecrest Logistics Partners"
+}

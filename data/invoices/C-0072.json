@@ -1,0 +1,30 @@
+{
+  "amount_usd": 6870.42,
+  "bank_account": "GB29 NWBK 6016 0057 0057 57",
+  "case_id": "C-0072",
+  "currency": "USD",
+  "due_date": "2026-08-03",
+  "invoice_date": "2026-07-04",
+  "invoice_number": "INV-2026-5072",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2454.96
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 2592.38
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 1823.08
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@kensingtonindustrial.com",
+  "vendor_id": "V-057",
+  "vendor_name": "Kensington Industrial Co"
+}

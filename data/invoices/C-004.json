@@ -1,0 +1,20 @@
+{
+  "amount_usd": 9950.0,
+  "bank_account": "GB29 NWBK 6016 0040 0040 40",
+  "case_id": "C-004",
+  "currency": "USD",
+  "due_date": "2026-07-31",
+  "invoice_date": "2026-07-01",
+  "invoice_number": "INV-2026-1195",
+  "line_items": [
+    {
+      "description": "Engineering kit E-12",
+      "quantity": 1,
+      "unit_price": 9950.0
+    }
+  ],
+  "notes": "Standard terms Net 30.",
+  "remit_to_email": "ap@copper-ridgeeng.com",
+  "vendor_id": "V-040",
+  "vendor_name": "Copper Ridge Engineering"
+}

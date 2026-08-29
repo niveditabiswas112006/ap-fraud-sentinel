@@ -1,0 +1,25 @@
+{
+  "amount_usd": 16765.71,
+  "bank_account": "GB29 NWBK 6016 0037 0037 37",
+  "case_id": "C-0077",
+  "currency": "USD",
+  "due_date": "2026-05-12",
+  "invoice_date": "2026-04-12",
+  "invoice_number": "INV-2026-5077",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 8078.45
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 8687.26
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@xanderlogistics.com",
+  "vendor_id": "V-037",
+  "vendor_name": "Xander Logistics Group"
+}

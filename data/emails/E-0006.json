@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Forest Hill Components. No changes to our bank account or remittance details. Please direct any questions to ap@foresthill.com.\n\nRegards,\nForest Hill Components",
+  "case_id": "E-0006",
+  "date": "2026-04-15T10:00:00Z",
+  "from": "ap@foresthill.com",
+  "from_domain": "foresthill.com",
+  "message_id": "<legit-0006@foresthill.com>",
+  "requested_bank_account": null,
+  "subject": "Thank you for your business",
+  "to": "ap@sentinel-corp.com"
+}

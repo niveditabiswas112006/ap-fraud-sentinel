@@ -1,0 +1,20 @@
+{
+  "amount_usd": 10578.55,
+  "bank_account": "GB29 NWBK 6016 0020 0020 20",
+  "case_id": "C-0060",
+  "currency": "USD",
+  "due_date": "2026-06-01",
+  "invoice_date": "2026-05-02",
+  "invoice_number": "INV-2026-5060",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 10578.55
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@redwoodengineering.com",
+  "vendor_id": "V-020",
+  "vendor_name": "Redwood Engineering Systems"
+}

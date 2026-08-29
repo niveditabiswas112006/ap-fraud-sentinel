@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Redwood Engineering Systems. No changes to our bank account or remittance details. Please direct any questions to ap@redwoodengineering.com.\n\nRegards,\nRedwood Engineering Systems",
+  "case_id": "E-0018",
+  "date": "2026-08-14T15:00:00Z",
+  "from": "ap@redwoodengineering.com",
+  "from_domain": "redwoodengineering.com",
+  "message_id": "<legit-0018@redwoodengineering.com>",
+  "requested_bank_account": null,
+  "subject": "Question about invoice INV-2026-5132",
+  "to": "ap@sentinel-corp.com"
+}

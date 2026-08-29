@@ -1,0 +1,20 @@
+{
+  "amount_usd": 4500.0,
+  "bank_account": "GB29 NWBK 6016 0035 0035 35",
+  "case_id": "C-007",
+  "currency": "USD",
+  "due_date": "2026-08-31",
+  "invoice_date": "2026-08-01",
+  "invoice_number": "INV-8812",
+  "line_items": [
+    {
+      "description": "Steel batch V-35",
+      "quantity": 1,
+      "unit_price": 4500.0
+    }
+  ],
+  "notes": "Standard terms.",
+  "remit_to_email": "ap@valley-forgesteel.com",
+  "vendor_id": "V-035",
+  "vendor_name": "Valley Forge Steel Systems"
+}

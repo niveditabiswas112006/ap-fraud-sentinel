@@ -1,0 +1,20 @@
+{
+  "amount_usd": 6829.04,
+  "bank_account": "GB29 NWBK 6016 0005 0005 05",
+  "case_id": "C-0038",
+  "currency": "USD",
+  "due_date": "2026-07-26",
+  "invoice_date": "2026-06-26",
+  "invoice_number": "INV-2026-5038",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6829.04
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@calderacomponents.com",
+  "vendor_id": "V-005",
+  "vendor_name": "Caldera Components Inc"
+}

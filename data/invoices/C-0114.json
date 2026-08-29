@@ -1,0 +1,25 @@
+{
+  "amount_usd": 20608.95,
+  "bank_account": "GB29 NWBK 6016 0009 0009 09",
+  "case_id": "C-0114",
+  "currency": "USD",
+  "due_date": "2026-06-11",
+  "invoice_date": "2026-05-12",
+  "invoice_number": "INV-2026-5114",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 5826.55
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 14782.4
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@graniteindustrial.com",
+  "vendor_id": "V-009",
+  "vendor_name": "Granite Industrial Supply"
+}

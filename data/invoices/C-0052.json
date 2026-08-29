@@ -1,0 +1,30 @@
+{
+  "amount_usd": 26132.8,
+  "bank_account": "GB29 NWBK 6016 0033 0033 33",
+  "case_id": "C-0052",
+  "currency": "USD",
+  "due_date": "2026-05-26",
+  "invoice_date": "2026-04-26",
+  "invoice_number": "INV-2026-5052",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 5537.23
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 12952.36
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 7643.21
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@thornwoodmanufacturing.com",
+  "vendor_id": "V-033",
+  "vendor_name": "Thornwood Manufacturing LLC"
+}

@@ -31,8 +31,11 @@ import { cn } from '@/lib/utils';
 
 function maskedBank(acct?: string) {
   if (!acct) return '—';
-  const clean = acct.trim();
-  if (clean.length <= 4) return clean;
+  const clean = acct.replace(/\s+/g, '');
+  if (clean.length <= 6) return clean;
+  if (clean.startsWith('GB') || clean.startsWith('US') || clean.startsWith('DE')) {
+    return `${clean.slice(0, 4)}••••${clean.slice(-5, -2)} ${clean.slice(-2)}`;
+  }
   return `•••• ${clean.slice(-4)}`;
 }
 
@@ -346,18 +349,23 @@ export function VendorsView() {
         )}
       </div>
 
-      {/* Detail Sparkline Modal Dialog */}
+      {/* Detail Sparkline Modal Dialog matching Reference Image 2 */}
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelected(null); setIsEditing(false); } }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white p-6 rounded-2xl">
           <DialogHeader>
-            <div className="flex items-center justify-between pr-6">
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {vendorDetail?.vendor.legalName ?? selected}
-                </DialogTitle>
-                <DialogDescription className="font-mono text-xs text-slate-500">
-                  {selected} · {vendorDetail?.vendor.registeredDomain}
-                </DialogDescription>
+            <div className="flex items-start justify-between pr-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-[#00668c]">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-extrabold text-slate-900">
+                    {vendorDetail?.vendor.legalName ?? selected}
+                  </DialogTitle>
+                  <DialogDescription className="font-mono text-xs text-slate-500 font-medium mt-0.5">
+                    {selected} · {vendorDetail?.vendor.registeredDomain}
+                  </DialogDescription>
+                </div>
               </div>
 
               {!isEditing && (
@@ -365,7 +373,7 @@ export function VendorsView() {
                   size="sm"
                   variant="outline"
                   onClick={() => setIsEditing(true)}
-                  className="h-8 gap-1.5 text-xs font-bold text-[#00668c] border-sky-200 bg-sky-50 hover:bg-sky-100 cursor-pointer"
+                  className="h-8 gap-1.5 text-xs font-bold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                   Edit Vendor
@@ -375,7 +383,7 @@ export function VendorsView() {
           </DialogHeader>
 
           {vendorDetail && (
-            <div className="flex flex-col gap-6 py-2">
+            <div className="flex flex-col gap-5 py-2">
               {/* Edit Mode inline form */}
               {isEditing ? (
                 <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 flex flex-col gap-3">
@@ -438,69 +446,88 @@ export function VendorsView() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-xs">
+                /* 6-field Metadata Grid matching Image 2 */
+                <div className="grid grid-cols-3 gap-y-3 gap-x-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-xs">
                   <div>
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Phone</span>
-                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.knownPhone ?? '—'}</span>
+                    <span className="text-slate-400 font-medium block text-[11px]">Phone</span>
+                    <span className="font-mono text-slate-800 font-bold">{vendorDetail.vendor.knownPhone ?? '—'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Bank Account</span>
-                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.knownBankAccount ?? '—'}</span>
+                    <span className="text-slate-400 font-medium block text-[11px]">Bank (known)</span>
+                    <span className="font-mono text-slate-800 font-bold">{maskedBank(vendorDetail.vendor.knownBankAccount)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Contact Email</span>
-                    <span className="text-slate-700 font-bold">{vendorDetail.vendor.contactEmail ?? '—'}</span>
+                    <span className="text-slate-400 font-medium block text-[11px]">Bank added</span>
+                    <span className="font-mono text-slate-800 font-bold">{vendorDetail.vendor.bankAccountAddedDate ?? '—'}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 font-medium block text-[11px]">First invoice</span>
+                    <span className="font-mono text-slate-800 font-bold">{vendorDetail.vendor.firstInvoiceDate ?? '—'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Tax ID</span>
-                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.taxId ?? '—'}</span>
+                    <span className="text-slate-400 font-medium block text-[11px]">Payments</span>
+                    <span className="font-mono text-slate-800 font-bold">{vendorDetail.payments.length || vendorDetail.vendor.paymentCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block text-[11px]">Amount μ / σ</span>
+                    <span className="font-mono text-slate-800 font-bold">
+                      {vendorDetail.vendor.amountMean ? Number(vendorDetail.vendor.amountMean).toFixed(2) : '0.00'} / {vendorDetail.vendor.amountStd ? Number(vendorDetail.vendor.amountStd).toFixed(2) : '0.00'}
+                    </span>
                   </div>
                 </div>
               )}
 
-              {/* Sparkline Chart */}
+              {/* Sparkline Chart Section matching Image 2 */}
               <div>
-                <h3 className="mb-3 text-xs font-bold text-slate-800">
-                  Payment History Sparkline ({vendorDetail.payments.length} Payments)
+                <h3 className="mb-2 font-mono text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  PAYMENT HISTORY SPARKLINE
                 </h3>
-                <div className="h-48 w-full rounded-xl border border-slate-100 bg-slate-50/30 p-2">
+                <div className="h-44 w-full rounded-xl border border-dashed border-slate-200 bg-white p-3">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={vendorDetail.payments.map((p) => ({ date: p.paidDate, amount: Number(p.amountUsd) }))}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <YAxis
+                        tick={{ fontSize: 9, fill: '#94a3b8' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `$${v}`}
+                      />
+                      <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Amount']} />
                       <Line type="monotone" dataKey="amount" stroke="#00668c" strokeWidth={2} dot={{ r: 3, fill: '#00668c' }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Payments Table */}
+              {/* Payments Table matching Image 2 */}
               <div>
                 <h3 className="mb-2 text-xs font-bold text-slate-800">Recent Payment Records</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-[10px] font-bold">PAYMENT ID</TableHead>
-                      <TableHead className="text-[10px] font-bold">INVOICE #</TableHead>
-                      <TableHead className="text-[10px] font-bold">DATE</TableHead>
-                      <TableHead className="text-[10px] font-bold text-right">AMOUNT</TableHead>
-                      <TableHead className="text-[10px] font-bold">CURRENCY</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vendorDetail.payments.map((p) => (
-                      <TableRow key={p.paymentId}>
-                        <TableCell><code className="font-mono text-xs">{p.paymentId}</code></TableCell>
-                        <TableCell><code className="font-mono text-[11px] text-muted-foreground">{p.invoiceNumber}</code></TableCell>
-                        <TableCell><code className="font-mono text-[11px]">{p.paidDate}</code></TableCell>
-                        <TableCell className="text-right font-mono text-xs">{formatCurrency(p.amountUsd, currency)}</TableCell>
-                        <TableCell className="text-xs">{p.currencyOriginal}</TableCell>
+                <div className="rounded-xl border border-slate-100 overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-slate-50/70">
+                      <TableRow className="hover:bg-transparent border-b border-slate-100">
+                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-2">PAYMENT</TableHead>
+                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-2">INVOICE</TableHead>
+                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-2">DATE</TableHead>
+                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-2 text-right">AMOUNT</TableHead>
+                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-2">CUR</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {vendorDetail.payments.map((p) => (
+                        <TableRow key={p.paymentId} className="border-b border-slate-100 hover:bg-slate-50">
+                          <TableCell className="py-2.5"><code className="font-mono text-xs font-bold text-slate-800">{p.paymentId}</code></TableCell>
+                          <TableCell className="py-2.5"><code className="font-mono text-xs text-slate-400">{p.invoiceNumber}</code></TableCell>
+                          <TableCell className="py-2.5 className text-xs text-slate-600 font-medium">{p.paidDate}</TableCell>
+                          <TableCell className="py-2.5 text-right font-mono text-xs font-bold text-slate-900">${Number(p.amountUsd).toFixed(2)}</TableCell>
+                          <TableCell className="py-2.5 font-mono text-xs text-slate-500">{p.currencyOriginal || 'USD'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           )}

@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Lakeside Components Supply. No changes to our bank account or remittance details. Please direct any questions to ap@lakesidecomponents.com.\n\nRegards,\nLakeside Components Supply",
+  "case_id": "E-0012",
+  "date": "2026-08-12T09:00:00Z",
+  "from": "ap@lakesidecomponents.com",
+  "from_domain": "lakesidecomponents.com",
+  "message_id": "<legit-0012@lakesidecomponents.com>",
+  "requested_bank_account": null,
+  "subject": "Reminder: invoice INV-2026-5011 due soon",
+  "to": "ap@sentinel-corp.com"
+}

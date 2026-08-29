@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Midland Steel Supply. No changes to our bank account or remittance details. Please direct any questions to ap@midlandsteel.com.\n\nRegards,\nMidland Steel Supply",
+  "case_id": "E-0003",
+  "date": "2026-04-16T12:00:00Z",
+  "from": "ap@midlandsteel.com",
+  "from_domain": "midlandsteel.com",
+  "message_id": "<legit-0003@midlandsteel.com>",
+  "requested_bank_account": null,
+  "subject": "Invoice INV-2026-5057 Payment Confirmation",
+  "to": "ap@sentinel-corp.com"
+}

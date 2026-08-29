@@ -1,0 +1,30 @@
+{
+  "amount_usd": 23177.86,
+  "bank_account": "GB29 NWBK 6016 0038 0038 38",
+  "case_id": "C-0032",
+  "currency": "USD",
+  "due_date": "2026-09-29",
+  "invoice_date": "2026-08-30",
+  "invoice_number": "INV-2026-5032",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 3747.34
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 8424.99
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 11005.53
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ambercreek.com",
+  "vendor_id": "V-038",
+  "vendor_name": "Amber Creek Industrial"
+}

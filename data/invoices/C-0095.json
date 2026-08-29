@@ -1,0 +1,30 @@
+{
+  "amount_usd": 33229.66,
+  "bank_account": "GB29 NWBK 6016 0053 0053 53",
+  "case_id": "C-0095",
+  "currency": "USD",
+  "due_date": "2026-05-28",
+  "invoice_date": "2026-04-28",
+  "invoice_number": "INV-2026-5095",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6742.5
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 5797.9
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 20689.26
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@glaciersteel.com",
+  "vendor_id": "V-053",
+  "vendor_name": "Glacier Steel Systems"
+}

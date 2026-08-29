@@ -1,0 +1,30 @@
+{
+  "amount_usd": 21451.87,
+  "bank_account": "GB29 NWBK 6016 0021 0021 21",
+  "case_id": "C-0040",
+  "currency": "USD",
+  "due_date": "2026-09-08",
+  "invoice_date": "2026-08-09",
+  "invoice_number": "INV-2026-5040",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 4885.16
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 10623.17
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 5943.54
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@sterlingmanufacturing.com",
+  "vendor_id": "V-021",
+  "vendor_name": "Sterling Manufacturing Group"
+}

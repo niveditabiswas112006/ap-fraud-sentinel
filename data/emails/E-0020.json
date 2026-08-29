@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Vanguard Steel Inc. No changes to our bank account or remittance details. Please direct any questions to ap@vanguardsteel.com.\n\nRegards,\nVanguard Steel Inc",
+  "case_id": "E-0020",
+  "date": "2026-05-25T11:00:00Z",
+  "from": "ap@vanguardsteel.com",
+  "from_domain": "vanguardsteel.com",
+  "message_id": "<legit-0020@vanguardsteel.com>",
+  "requested_bank_account": null,
+  "subject": "Question about invoice INV-2026-5012",
+  "to": "ap@sentinel-corp.com"
+}

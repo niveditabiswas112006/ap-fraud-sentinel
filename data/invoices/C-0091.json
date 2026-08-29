@@ -1,0 +1,25 @@
+{
+  "amount_usd": 15412.36,
+  "bank_account": "GB29 NWBK 6016 0012 0012 12",
+  "case_id": "C-0091",
+  "currency": "USD",
+  "due_date": "2026-09-25",
+  "invoice_date": "2026-08-26",
+  "invoice_number": "INV-2026-5091",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6946.31
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 8466.05
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@junipercomponents.com",
+  "vendor_id": "V-012",
+  "vendor_name": "Juniper Components Inc"
+}

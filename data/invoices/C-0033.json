@@ -1,0 +1,30 @@
+{
+  "amount_usd": 22531.2,
+  "bank_account": "GB29 NWBK 6016 0047 0047 47",
+  "case_id": "C-0033",
+  "currency": "USD",
+  "due_date": "2026-09-24",
+  "invoice_date": "2026-08-25",
+  "invoice_number": "INV-2026-5033",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2624.38
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 10037.93
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 9868.89
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@brooksideindustrial.com",
+  "vendor_id": "V-047",
+  "vendor_name": "Brookside Industrial Supply"
+}

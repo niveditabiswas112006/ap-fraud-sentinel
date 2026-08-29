@@ -1,0 +1,25 @@
+{
+  "amount_usd": 3702.92,
+  "bank_account": "GB29 NWBK 6016 0046 0046 46",
+  "case_id": "C-0001",
+  "currency": "USD",
+  "due_date": "2026-04-30",
+  "invoice_date": "2026-03-31",
+  "invoice_number": "INV-2026-5001",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 433.03
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 3269.89
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ironcladmanufacturing.com",
+  "vendor_id": "V-046",
+  "vendor_name": "Ironclad Manufacturing Holdings"
+}

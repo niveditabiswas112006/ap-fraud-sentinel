@@ -1,0 +1,20 @@
+{
+  "amount_usd": 3710.73,
+  "bank_account": "GB29 NWBK 6016 0031 0031 31",
+  "case_id": "C-0119",
+  "currency": "USD",
+  "due_date": "2026-08-15",
+  "invoice_date": "2026-07-16",
+  "invoice_number": "INV-2026-5119",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 3710.73
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ridgelineindustrial.com",
+  "vendor_id": "V-031",
+  "vendor_name": "Ridgeline Industrial Supply"
+}

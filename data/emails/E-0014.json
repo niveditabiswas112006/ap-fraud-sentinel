@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Kensington Industrial Co. No changes to our bank account or remittance details. Please direct any questions to ap@kensingtonindustrial.com.\n\nRegards,\nKensington Industrial Co",
+  "case_id": "E-0014",
+  "date": "2026-02-24T11:00:00Z",
+  "from": "ap@kensingtonindustrial.com",
+  "from_domain": "kensingtonindustrial.com",
+  "message_id": "<legit-0014@kensingtonindustrial.com>",
+  "requested_bank_account": null,
+  "subject": "Question about invoice INV-2026-5004",
+  "to": "ap@sentinel-corp.com"
+}

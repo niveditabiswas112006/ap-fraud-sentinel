@@ -1,0 +1,20 @@
+{
+  "amount_usd": 11325.48,
+  "bank_account": "GB29 NWBK 6016 0054 0054 54",
+  "case_id": "C-0126",
+  "currency": "USD",
+  "due_date": "2026-03-30",
+  "invoice_date": "2026-02-28",
+  "invoice_number": "INV-2026-5126",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 11325.48
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@highlandengineering.com",
+  "vendor_id": "V-054",
+  "vendor_name": "Highland Engineering Group"
+}

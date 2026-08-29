@@ -1,0 +1,25 @@
+{
+  "amount_usd": 21025.62,
+  "bank_account": "GB29 NWBK 6016 0011 0011 11",
+  "case_id": "C-0039",
+  "currency": "USD",
+  "due_date": "2026-03-24",
+  "invoice_date": "2026-02-22",
+  "invoice_number": "INV-2026-5039",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 7204.73
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 13820.89
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ironmountain.com",
+  "vendor_id": "V-011",
+  "vendor_name": "Iron Mountain Steel"
+}

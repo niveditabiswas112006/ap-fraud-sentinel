@@ -1,0 +1,25 @@
+{
+  "amount_usd": 22304.02,
+  "bank_account": "GB29 NWBK 6016 0051 0051 51",
+  "case_id": "C-0023",
+  "currency": "USD",
+  "due_date": "2026-03-04",
+  "invoice_date": "2026-02-02",
+  "invoice_number": "INV-2026-5023",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 7961.1
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 14342.92
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@eastsidefabrication.com",
+  "vendor_id": "V-051",
+  "vendor_name": "Eastside Fabrication Inc"
+}

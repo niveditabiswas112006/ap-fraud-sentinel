@@ -1,0 +1,30 @@
+{
+  "amount_usd": 12641.34,
+  "bank_account": "GB29 NWBK 6016 0026 0026 26",
+  "case_id": "C-0047",
+  "currency": "USD",
+  "due_date": "2026-03-27",
+  "invoice_date": "2026-02-25",
+  "invoice_number": "INV-2026-5047",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 3048.56
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 1519.69
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 8073.09
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@magnoliaengineering.com",
+  "vendor_id": "V-026",
+  "vendor_name": "Magnolia Engineering Systems"
+}

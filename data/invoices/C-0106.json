@@ -1,0 +1,25 @@
+{
+  "amount_usd": 10532.08,
+  "bank_account": "GB29 NWBK 6016 0039 0039 39",
+  "case_id": "C-0106",
+  "currency": "USD",
+  "due_date": "2026-05-06",
+  "invoice_date": "2026-04-06",
+  "invoice_number": "INV-2026-5106",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 4010.37
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 6521.71
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@bluegrass.com",
+  "vendor_id": "V-039",
+  "vendor_name": "Bluegrass Manufacturing"
+}

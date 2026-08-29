@@ -1,0 +1,30 @@
+{
+  "amount_usd": 26358.68,
+  "bank_account": "GB29 NWBK 6016 0022 0022 22",
+  "case_id": "C-0093",
+  "currency": "USD",
+  "due_date": "2026-06-19",
+  "invoice_date": "2026-05-20",
+  "invoice_number": "INV-2026-5093",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 7843.42
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 12531.55
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 5983.71
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@tridentindustrial.com",
+  "vendor_id": "V-022",
+  "vendor_name": "Trident Industrial Supply"
+}

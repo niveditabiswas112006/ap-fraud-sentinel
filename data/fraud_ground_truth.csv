@@ -1,11 +1,11 @@
-case_id,invoice_file,email_file,vendor_id,fraud_type,signals_expected,expected_outcome,amount_at_risk_inr
-GT-01,invoices/INV-2026-1088.pdf,emails/email_101.eml,V-0017,BEC / bank-detail change,lookalike domain; bank change 2 days before invoice; IBAN differs from master,HOLD + verify by call,4564900.00
-GT-02,invoices/INV-8812B.pdf,invoices/INV-8812.pdf,V-0029,Duplicate invoice,same invoice number resubmitted; amounts differ by $36,HOLD,305982.00
-GT-03,invoices/INV-2026-1091.pdf,emails/email_103.eml,V-0038,Threshold-skirting,"amount $4,950 just below $5,000 approval threshold; urgency + new account",HOLD + verify by call,472725.00
-GT-04,invoices/INV-2026-2207.pdf,emails/email_104.eml,(none),Fictitious vendor,no master record; high first amount; net-0 terms; LV IBAN,HOLD + verify by call,2129650.00
-GT-05,invoices/INV-2026-3319.pdf,emails/email_105.eml,V-0044,IBAN country mismatch,DK vendor redirected to LV bank; email requests banking update,HOLD + verify by call,931125.00
-GT-06,invoices/INV-2026-1195.pdf,emails/email_108.eml,V-0052,Amount anomaly,5.7x vendor historical average; plausible consolidation narrative,HOLD + verify by call,1136450.00
-GT-07,invoices/INV-2026-1023.pdf,emails/email_106.eml,V-0011,Account takeover,"real domain; Saturday 23:47 send time; secrecy cues (""do not call""); new IBAN",HOLD + verify by call,849950.00
-GT-08,invoices/INV-2026-4410.pdf,emails/email_107.eml,(none),Lookalike domain onboarding,.co domain mimicking .de vendor; no master record; net-18 terms,HOLD + verify by call,615975.00
-GT-09,invoices/CORRUPT-9901.pdf,,,Malformed input,truncated PDF,"quarantine, no crash",0.00
-GT-10,emails/CORRUPT-9902.eml,,,Malformed input,binary garbage in .eml,"quarantine, no crash",0.00
+caseId,invoiceNumber,fraudType,isFraud,expectedSignal
+C-001,INV-2026-4410,BEC,True,domain_lookalike+timing+amount_anomaly
+C-002,INV-2026-1088,fake_invoice,True,first_time_vendor+amount_anomaly
+C-003,INV-2026-1091,invoice_manipulation,True,duplicate+amount_anomaly
+C-004,INV-2026-1195,invoice_manipulation,True,threshold_skirting
+C-005,INV-2026-2207,account_takeover,True,timing+domain_lookalike
+C-006,INV-2026-3319,fake_invoice,True,first_time_vendor
+C-007,INV-8812,fake_invoice,True,malformed_id
+C-008,INV-8812B,invoice_manipulation,True,duplicate
+C-009,CORRUPT-9901,malformed_input,True,schema_validation_fail
+C-010,CORRUPT-9902,malformed_input,True,schema_validation_fail

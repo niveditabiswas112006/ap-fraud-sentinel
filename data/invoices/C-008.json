@@ -1,0 +1,20 @@
+{
+  "amount_usd": 4500.0,
+  "bank_account": "GB29 NWBK 6016 0045 0045 45",
+  "case_id": "C-008",
+  "currency": "USD",
+  "due_date": "2026-08-31",
+  "invoice_date": "2026-08-01",
+  "invoice_number": "INV-8812B",
+  "line_items": [
+    {
+      "description": "Components batch H-45",
+      "quantity": 1,
+      "unit_price": 4500.0
+    }
+  ],
+  "notes": "Standard terms.",
+  "remit_to_email": "ap@highmark-componentgroup.com",
+  "vendor_id": "V-045",
+  "vendor_name": "Highmark Components Group"
+}

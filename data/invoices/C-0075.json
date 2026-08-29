@@ -1,0 +1,30 @@
+{
+  "amount_usd": 4363.17,
+  "bank_account": "GB29 NWBK 6016 0045 0045 45",
+  "case_id": "C-0075",
+  "currency": "USD",
+  "due_date": "2026-04-30",
+  "invoice_date": "2026-03-31",
+  "invoice_number": "INV-2026-5075",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2065.87
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 1824.51
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 472.79
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@highmarkcomponents.com",
+  "vendor_id": "V-045",
+  "vendor_name": "Highmark Components Group"
+}

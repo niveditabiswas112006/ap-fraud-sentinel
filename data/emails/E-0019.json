@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Quartz Fabrication Group. No changes to our bank account or remittance details. Please direct any questions to ap@quartzfabrication.com.\n\nRegards,\nQuartz Fabrication Group",
+  "case_id": "E-0019",
+  "date": "2026-08-23T11:00:00Z",
+  "from": "ap@quartzfabrication.com",
+  "from_domain": "quartzfabrication.com",
+  "message_id": "<legit-0019@quartzfabrication.com>",
+  "requested_bank_account": null,
+  "subject": "Statement of Account - May 2026",
+  "to": "ap@sentinel-corp.com"
+}

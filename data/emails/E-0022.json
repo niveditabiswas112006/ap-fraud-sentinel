@@ -1,0 +1,12 @@
+{
+  "bank_change_request": false,
+  "body": "Hello AP team,\n\nThis is a routine message from Amber Creek Industrial. No changes to our bank account or remittance details. Please direct any questions to ap@ambercreek.com.\n\nRegards,\nAmber Creek Industrial",
+  "case_id": "E-0022",
+  "date": "2026-02-09T11:00:00Z",
+  "from": "ap@ambercreek.com",
+  "from_domain": "ambercreek.com",
+  "message_id": "<legit-0022@ambercreek.com>",
+  "requested_bank_account": null,
+  "subject": "Reminder: invoice INV-2026-5076 due soon",
+  "to": "ap@sentinel-corp.com"
+}

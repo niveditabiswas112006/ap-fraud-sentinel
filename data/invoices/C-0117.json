@@ -1,0 +1,20 @@
+{
+  "amount_usd": 29182.89,
+  "bank_account": "GB29 NWBK 6016 0038 0038 38",
+  "case_id": "C-0117",
+  "currency": "USD",
+  "due_date": "2026-07-29",
+  "invoice_date": "2026-06-29",
+  "invoice_number": "INV-2026-5117",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 29182.89
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@ambercreek.com",
+  "vendor_id": "V-038",
+  "vendor_name": "Amber Creek Industrial"
+}

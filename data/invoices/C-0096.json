@@ -1,0 +1,25 @@
+{
+  "amount_usd": 20598.76,
+  "bank_account": "GB29 NWBK 6016 0048 0048 48",
+  "case_id": "C-0096",
+  "currency": "USD",
+  "due_date": "2026-04-27",
+  "invoice_date": "2026-03-28",
+  "invoice_number": "INV-2026-5096",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 6738.11
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 13860.65
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@cedarlogistics.com",
+  "vendor_id": "V-048",
+  "vendor_name": "Cedar Logistics Partners"
+}

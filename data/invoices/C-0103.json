@@ -1,0 +1,30 @@
+{
+  "amount_usd": 6105.64,
+  "bank_account": "GB29 NWBK 6016 0030 0030 30",
+  "case_id": "C-0103",
+  "currency": "USD",
+  "due_date": "2026-06-08",
+  "invoice_date": "2026-05-09",
+  "invoice_number": "INV-2026-5103",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2490.71
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 2296.43
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 1318.5
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@quartzfabrication.com",
+  "vendor_id": "V-030",
+  "vendor_name": "Quartz Fabrication Group"
+}

@@ -1,0 +1,30 @@
+{
+  "amount_usd": 2451.12,
+  "bank_account": "GB29 NWBK 6016 0004 0004 04",
+  "case_id": "C-0111",
+  "currency": "USD",
+  "due_date": "2026-03-23",
+  "invoice_date": "2026-02-21",
+  "invoice_number": "INV-2026-5111",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 771.28
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 406.43
+    },
+    {
+      "description": "Line item 3",
+      "quantity": 1,
+      "unit_price": 1273.41
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@beaconfabrication.com",
+  "vendor_id": "V-004",
+  "vendor_name": "Beacon Fabrication Co"
+}

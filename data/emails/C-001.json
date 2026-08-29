@@ -1,0 +1,12 @@
+{
+  "bank_change_request": true,
+  "body": "Hi AP team,\n\nThis is an urgent update. We have changed our bank. Please wire today to avoid delays. Immediate action required.\n\nNew account: GB29 NWBK 6016 9999 8888 77\n\nRegards,\nAcme Controller",
+  "case_id": "C-001",
+  "date": "2026-07-08T10:00:00Z",
+  "from": "controller@acme-industria1.com",
+  "from_domain": "acme-industria1.com",
+  "message_id": "<bec-4410-001@acme-industria1.com>",
+  "requested_bank_account": "GB29 NWBK 6016 9999 8888 77",
+  "subject": "URGENT: Bank Account Change for Acme Industrial - Action Required Immediately",
+  "to": "ap@sentinel-corp.com"
+}

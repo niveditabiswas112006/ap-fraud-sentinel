@@ -1,0 +1,25 @@
+{
+  "amount_usd": 5545.82,
+  "bank_account": "GB29 NWBK 6016 0060 0060 60",
+  "case_id": "C-0090",
+  "currency": "USD",
+  "due_date": "2026-02-09",
+  "invoice_date": "2026-01-10",
+  "invoice_number": "INV-2026-5090",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 2302.54
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 3243.28
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@zenithengineering.com",
+  "vendor_id": "V-060",
+  "vendor_name": "Zenith Engineering Holdings"
+}

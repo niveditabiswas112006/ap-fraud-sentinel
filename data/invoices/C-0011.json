@@ -1,0 +1,25 @@
+{
+  "amount_usd": 23898.23,
+  "bank_account": "GB29 NWBK 6016 0008 0008 08",
+  "case_id": "C-0011",
+  "currency": "USD",
+  "due_date": "2026-06-12",
+  "invoice_date": "2026-05-13",
+  "invoice_number": "INV-2026-5011",
+  "line_items": [
+    {
+      "description": "Line item 1",
+      "quantity": 1,
+      "unit_price": 11122.64
+    },
+    {
+      "description": "Line item 2",
+      "quantity": 1,
+      "unit_price": 12775.59
+    }
+  ],
+  "notes": "Net 30. Please remit to the bank account on file.",
+  "remit_to_email": "ap@falconmanufacturing.com",
+  "vendor_id": "V-008",
+  "vendor_name": "Falcon Manufacturing LLC"
+}
