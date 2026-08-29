@@ -43,8 +43,8 @@ export function CaseDetailSheet() {
     }
   };
 
-  const caseData = data ?? {
-    caseId: id ?? 'INV-2026-4418',
+  const caseData = {
+    caseId: data?.caseId ?? id ?? 'INV-2026-4418',
     vendorName: data?.vendorName ?? 'Acme Industrial Supply',
     amountUsd: data?.amountUsd ?? 48394.27,
     senderDomain: data?.senderDomain ?? 'acme-industrial1.com',

@@ -24,3 +24,4 @@ data/uploads/
 
 # Keep RocketRide extension docs & pipe files
 !.rocketride/
+*.tsbuildinfo

@@ -85,7 +85,7 @@ async function walkDir(zip: ZipWriter, absDir: string, relDir: string): Promise<
 
 /** PC-friendly package.json: standard next scripts + service conveniences. */
 function buildPcPackageJson(original: unknown): string {
-  const pkg = (typeof original === 'object' && original) || {};
+  const pkg = (typeof original === 'object' && original !== null ? original : {}) as { scripts?: Record<string, string>; [key: string]: unknown };
   const scripts: Record<string, string> = {
     ...(pkg.scripts ?? {}),
     dev: 'next dev -p 3000',

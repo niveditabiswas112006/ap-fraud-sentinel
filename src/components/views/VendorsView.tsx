@@ -78,7 +78,7 @@ function parseVendorCsv(text: string) {
   const addressIdx = getIdx(['address']);
   const taxIdx = getIdx(['taxid']);
 
-  const vendors = [];
+  const vendors: any[] = [];
   for (let i = 1; i < lines.length; i++) {
     const row = parseLine(lines[i]);
     const legalName = nameIdx !== -1 ? row[nameIdx] : '';
@@ -326,10 +326,10 @@ export function VendorsView() {
                     <TableCell className="font-mono text-xs text-slate-500">{maskedBank(v.knownBankAccount)}</TableCell>
                     <TableCell className="font-mono text-xs font-semibold text-slate-700">{v.paymentCount}</TableCell>
                     <TableCell className="font-mono text-xs font-bold text-slate-900">
-                      {formatCurrency(v.amountMean, currency)}
+                      {formatCurrency(v.amountMean ?? 0, currency)}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-slate-500">
-                      {formatCurrency(v.amountStd, currency)}
+                      {formatCurrency(v.amountStd ?? 0, currency)}
                     </TableCell>
                   </TableRow>
                 ))}

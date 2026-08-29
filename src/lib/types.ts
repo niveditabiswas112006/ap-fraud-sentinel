@@ -139,6 +139,7 @@ export interface TraceStage {
   startedAt?: number;
   completedAt?: number;
   casesInStage?: number;
+  message?: string;
 }
 
 export interface TraceEvent {

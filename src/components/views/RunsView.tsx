@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRuns, useGroundTruth } from '@/hooks/useDashboardData';
 import { CostTable } from '@/components/dashboard/CostTable';
+import { useAppStore, formatCurrency } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import type { RunRecord } from '@/lib/types';
 
