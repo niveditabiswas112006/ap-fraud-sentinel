@@ -1,297 +1,288 @@
 'use client';
 
-// UploadView — drop your own CSV / PDF / EML dataset from your PC.
-//
-// Three file kinds, three destinies:
-//   • .csv named vendor_master.csv / payment_history.csv / fraud_ground_truth.csv
-//       → saved to /data/ (overwrites the synthetic reference master) and the
-//         worker re-imports the DB tables immediately so the Vendors view +
-//         payment-history sparklines reflect YOUR data before the batch runs.
-//   • .pdf  (invoices)
-//       → saved to /data/uploads/<run_id>/ and screened as cases.
-//   • .eml  (emails — bank-change requests, BEC lures)
-//       → saved to /data/uploads/<run_id>/ and paired with PDFs by invoice #
-//         or case_id marker (mirrors how the synthetic seed dataset pairs them).
-//
-// After upload, click "Start batch run" — the worker scans the upload dir for
-// both .pdf and .eml, pairs them, and runs the 7-stage pipeline.
-
 import { useState, useCallback, useRef } from 'react';
-import { Upload, FileText, Terminal, Play, Copy, Check, Table2, Mail, FileSearch, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UploadCloud, FileText, Mail, CheckCircle2, ShieldAlert, Loader2, Info, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useUploadFiles, useRuns, useStartRun } from '@/hooks/useDashboardData';
+import { useUploadFiles, useStartRun } from '@/hooks/useDashboardData';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const ACCEPTED = /\.(csv|pdf|eml|json|txt)$/i;
+const ACCEPTED = /\.(csv|pdf|eml|json|txt|msg)$/i;
 
-const REFERENCE_CSV_NAMES = new Set([
-  'vendor_master.csv',
-  'payment_history.csv',
-  'fraud_ground_truth.csv',
-]);
-
-function fileKind(name: string): 'reference-csv' | 'pdf' | 'eml' | 'csv' | 'other' {
-  const lower = name.toLowerCase();
-  if (REFERENCE_CSV_NAMES.has(lower)) return 'reference-csv';
-  if (lower.endsWith('.pdf')) return 'pdf';
-  if (lower.endsWith('.eml')) return 'eml';
-  if (lower.endsWith('.csv')) return 'csv';
-  return 'other';
-}
-
-function FileIcon({ kind }: { kind: ReturnType<typeof fileKind> }) {
-  if (kind === 'reference-csv' || kind === 'csv') return <Table2 className="h-3.5 w-3.5 text-[#7fb8d6]" />;
-  if (kind === 'pdf') return <FileText className="h-3.5 w-3.5 text-[#7fb8d6]" />;
-  if (kind === 'eml') return <Mail className="h-3.5 w-3.5 text-[#7fb8d6]" />;
-  return <FileText className="h-3.5 w-3.5 text-muted-foreground" />;
+interface QueueItem {
+  id: string;
+  name: string;
+  size: string;
+  time: string;
+  status: 'Ready' | 'Parsing' | 'Quarantined' | 'Analyzed';
+  badgeCls: string;
 }
 
 export function UploadView() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [runId, setRunId] = useState('');
   const [dragging, setDragging] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const setRunId = useAppStore((s) => s.setRunId);
+  const setView = useAppStore((s) => s.setView);
+  const activeRunId = useAppStore((s) => s.runId);
 
   const upload = useUploadFiles();
   const startRun = useStartRun();
-  const { data: runs } = useRuns();
-  const setView = useAppStore((s) => s.setView);
   const { toast } = useToast();
+
+  const [queue, setQueue] = useState<QueueItem[]>([
+    { id: '1', name: 'INV-2023-8942_GlobalTech.pdf', size: '1.2 MB', time: 'Uploaded 2m ago', status: 'Parsing', badgeCls: 'bg-[#e0f2fe] text-[#0284c7] border-sky-200' },
+    { id: '2', name: 'FWD Payment Instructions_Updated.pdf', size: '45 KB', time: 'Uploaded 15m ago', status: 'Ready', badgeCls: 'bg-sky-50 text-[#005577] border-sky-300' },
+    { id: '3', name: 'Urgent Invoice Overdue Notice.pdf', size: '500 KB', time: 'Metadata anomalous', status: 'Quarantined', badgeCls: 'bg-red-100 text-red-700 border-red-300' },
+    { id: '4', name: 'Receipt_Oct_2023_Meals.pdf', size: '1.8 MB', time: 'Uploaded 1h ago', status: 'Analyzed', badgeCls: 'bg-teal-50 text-teal-800 border-teal-200' },
+  ]);
+
+  const handleFilesUpload = async (fileList: File[]) => {
+    const valid = fileList.filter((f) => ACCEPTED.test(f.name));
+    if (!valid.length) {
+      toast({
+        title: 'Unsupported file format',
+        description: 'Please upload PDF, EML, CSV, JSON, or TXT files.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const res = await upload.mutateAsync({ files: valid });
+      if (res.run_id) setRunId(res.run_id);
+
+      const newItems: QueueItem[] = valid.map((f, i) => ({
+        id: `upload-${Date.now()}-${i}`,
+        name: f.name,
+        size: `${(f.size / 1024).toFixed(1)} KB`,
+        time: 'Just now',
+        status: 'Ready',
+        badgeCls: 'bg-sky-50 text-[#005577] border-sky-300',
+      }));
+
+      setQueue((prev) => [...newItems, ...prev]);
+      setToastMsg(`${valid.length} file${valid.length > 1 ? 's' : ''} uploaded to processing queue. Run ID: ${res.run_id}`);
+      
+      toast({
+        title: 'Upload Successful',
+        description: `${valid.length} file(s) saved. Click 'Run Batch' to analyze.`,
+      });
+    } catch (e) {
+      toast({
+        title: 'Upload Failed',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
+    }
+  };
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const dropped = Array.from(e.dataTransfer?.files ?? []).filter((f) => ACCEPTED.test(f.name));
-    if (dropped.length) setFiles((prev) => [...prev, ...dropped].slice(0, 200));
+    const dropped = Array.from(e.dataTransfer?.files ?? []);
+    if (dropped.length) handleFilesUpload(dropped);
   }, []);
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(e.target.files ?? []).filter((f) => ACCEPTED.test(f.name));
-    if (picked.length) setFiles((prev) => [...prev, ...picked].slice(0, 200));
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length) handleFilesUpload(picked);
   };
 
-  const submit = async () => {
-    if (!files.length) {
-      toast({ title: 'Add files first', variant: 'destructive' });
-      return;
-    }
+  const onRunBatch = async () => {
     try {
-      const r = await upload.mutateAsync({ runId: runId || undefined, files });
-      setRunId(r.run_id);
-      const refCount = r.files.filter((f) => f.kind === 'reference-csv').length;
-      const caseCount = r.files.length - refCount;
+      const r = await startRun.mutateAsync({});
       toast({
-        title: `Uploaded ${r.files_received} file(s)`,
-        description: r.csv_reloaded
-          ? `${refCount} reference CSV(s) re-seeded → ${r.csv_reloaded.vendors} vendors / ${r.csv_reloaded.payments} payments. ${caseCount} case file(s) staged.`
-          : `${caseCount} case file(s) staged in /data/uploads/${r.run_id}/.`,
+        title: 'Batch run started',
+        description: `run_id ${r.run_id} — processing pipeline in real time.`,
       });
-      setFiles([]);
-    } catch (e) {
-      toast({ title: 'Upload failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
-    }
-  };
-
-  const kickRun = async () => {
-    if (!runId) {
-      toast({ title: 'Upload first', description: 'Submit files to get a run_id.', variant: 'destructive' });
-      return;
-    }
-    try {
-      const r = await startRun.mutateAsync({ batch_path: `data/uploads/${runId}` });
-      toast({ title: 'Worker started', description: `run_id: ${r.run_id} — scanning data/uploads/${runId}/ for PDFs + EMLs` });
       setView('dashboard');
     } catch (e) {
-      toast({ title: 'Run failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+      toast({
+        title: 'Run failed',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
     }
   };
-
-  const curl = `curl -X POST http://localhost:3000/api/upload \\
-  -F "run_id=upload-$(date +%s)" \\
-  -F "file=@vendor_master.csv" \\
-  -F "file=@payment_history.csv" \\
-  -F "file=@invoice_001.pdf" \\
-  -F "file=@bank_change.eml"`;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(curl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const refCsvCount = files.filter((f) => fileKind(f.name) === 'reference-csv').length;
-  const caseCount = files.length - refCsvCount;
 
   return (
-    <div className="grid grid-cols-1 gap-4 p-4 md:p-6 lg:grid-cols-3">
-      <Card className="lg:col-span-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Upload className="h-4 w-4 text-[#7fb8d6]" />
-            Upload your dataset (CSV · PDF · EML)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      {/* Page Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Upload Dataset</h1>
+          <p className="text-xs font-semibold text-slate-500">
+            Upload invoices, vendor communications, or reference CSV files to process through RocketRide.
+          </p>
+        </div>
+
+        <Button
+          onClick={onRunBatch}
+          disabled={startRun.isPending}
+          className="gap-2 rounded-full bg-[#00668c] hover:bg-[#005577] text-white text-xs font-extrabold px-5 py-2.5 shadow-sm cursor-pointer"
+        >
+          {startRun.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-white" />
+          ) : (
+            <Play className="h-3.5 w-3.5 fill-white" />
+          )}
+          <span>Run Batch</span>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Side: Upload Box */}
+        <div className="flex flex-col gap-6 lg:col-span-2">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              'flex min-h-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors',
-              dragging ? 'border-[#1f6c92] bg-[#1f6c92]/10' : 'border-border/60 hover:border-[#1f6c92]/50 hover:bg-muted/20',
+              'relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-10 text-center transition-all cursor-pointer bg-slate-50/50',
+              dragging ? 'border-[#00668c] bg-sky-50' : 'border-slate-300 hover:border-[#00668c] hover:bg-white',
+              upload.isPending && 'opacity-60 pointer-events-none'
             )}
           >
-            <Upload className="h-8 w-8 text-[#7fb8d6]" />
-            <div className="text-sm font-medium">Drop your CSV / PDF / EML files here</div>
-            <div className="text-xs text-muted-foreground">or click to browse — accepts .csv, .pdf, .eml, .json, .txt</div>
+            {upload.isPending ? (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-[#00668c]" />
+                <span className="text-xs font-bold text-slate-700">Uploading files to dataset...</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200/80 text-slate-600">
+                  <UploadCloud className="h-7 w-7" />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-extrabold text-slate-800">Drag & Drop Invoice / Dataset files</h3>
+                  <p className="max-w-md text-xs font-medium text-slate-500">
+                    Supports PDF, EML, CSV (vendor_master, payment_history, fraud_ground_truth), JSON, or TXT.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  className="mt-2 rounded-full bg-[#e0f2fe] hover:bg-sky-200 text-[#005577] text-xs font-extrabold px-6 py-2 shadow-none border border-sky-200 cursor-pointer"
+                >
+                  Browse Files
+                </Button>
+              </>
+            )}
+
             <input
               ref={inputRef}
               type="file"
               multiple
-              accept=".csv,.pdf,.eml,.json,.txt"
+              accept=".csv,.pdf,.eml,.json,.txt,.msg"
               onChange={onPick}
               className="hidden"
             />
           </div>
 
-          {/* Help callout — explains what each file kind does. */}
-          <div className="rounded-md border border-[#1f6c92]/30 bg-[#1f6c92]/[0.07] p-3">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[#7fb8d6]">
-              <Info className="h-3 w-3" />
-              How files are routed
-            </div>
-            <ul className="space-y-1 text-xs text-foreground/85">
-              <li className="flex gap-2">
-                <Table2 className="mt-0.5 h-3 w-3 shrink-0 text-[#7fb8d6]" />
-                <span><code className="font-mono text-[11px]">vendor_master.csv</code> / <code className="font-mono text-[11px]">payment_history.csv</code> / <code className="font-mono text-[11px]">fraud_ground_truth.csv</code> → overwrites the reference master and re-seeds the DB immediately (vendors + payment history the pipeline grounds against).</span>
-              </li>
-              <li className="flex gap-2">
-                <FileText className="mt-0.5 h-3 w-3 shrink-0 text-[#7fb8d6]" />
-                <span><code className="font-mono text-[11px]">*.pdf</code> invoices → staged in <code className="font-mono text-[11px]">/data/uploads/&lt;run_id&gt;/</code> and screened as cases.</span>
-              </li>
-              <li className="flex gap-2">
-                <Mail className="mt-0.5 h-3 w-3 shrink-0 text-[#7fb8d6]" />
-                <span><code className="font-mono text-[11px]">*.eml</code> emails → staged alongside the PDFs and paired by invoice # (the BEC-signal input).</span>
-              </li>
-            </ul>
-          </div>
-
-          {files.length > 0 && (
-            <ScrollArea className="max-h-56 rounded-md border border-border/60 p-2">
-              <ul className="flex flex-col gap-1">
-                {files.map((f, i) => {
-                  const kind = fileKind(f.name);
-                  return (
-                    <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-xs">
-                      <FileIcon kind={kind} />
-                      <span className="truncate">{f.name}</span>
-                      {kind === 'reference-csv' && (
-                        <span className="rounded bg-[#1f6c92]/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[#7fb8d6]">ref</span>
-                      )}
-                      {kind === 'pdf' && (
-                        <span className="rounded bg-emerald-700/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-emerald-300">invoice</span>
-                      )}
-                      {kind === 'eml' && (
-                        <span className="rounded bg-amber-700/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-amber-300">email</span>
-                      )}
-                      <span className="ml-auto font-mono text-muted-foreground">{(f.size / 1024).toFixed(1)} kB</span>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setFiles((prev) => prev.filter((_, idx) => idx !== i)); }}
-                        className="text-xs text-red-300 hover:underline"
-                      >
-                        remove
-                      </button>
-                    </li>
-                  );
-                })}
+          {/* Info cards at bottom of left panel */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-800">
+                <FileText className="h-4 w-4 text-[#00668c]" />
+                Supported Formats
+              </div>
+              <ul className="space-y-1 text-xs text-slate-600">
+                <li>• PDF (Invoices, Receipts & Statements)</li>
+                <li>• EML & MSG (Raw Vendor Communications)</li>
+                <li>• CSV (Master Databases & Ground Truth)</li>
               </ul>
-            </ScrollArea>
-          )}
-
-          {files.length > 0 && (
-            <div className="text-[11px] text-muted-foreground">
-              {refCsvCount > 0 && <span className="text-[#7fb8d6]">{refCsvCount} reference CSV</span>}
-              {refCsvCount > 0 && caseCount > 0 && <span> · </span>}
-              {caseCount > 0 && <span className="text-emerald-300">{caseCount} case file</span>}
-              {' · '}
-              <span>total {files.length}</span>
             </div>
-          )}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex flex-1 flex-col gap-1">
-              <Label htmlFor="run_id" className="text-xs">Run ID (optional)</Label>
-              <Input
-                id="run_id"
-                value={runId}
-                onChange={(e) => setRunId(e.target.value)}
-                placeholder="auto-generated on submit"
-                className="font-mono"
-              />
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-800">
+                <Info className="h-4 w-4 text-[#00668c]" />
+                Dataset Staging Policy
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Uploaded reference files automatically reload the SQLite ground-truth database for immediate out-of-band verification.
+              </p>
             </div>
-            <Button onClick={submit} disabled={upload.isPending || !files.length} className="gap-2">
-              <Upload className="h-4 w-4" />
-              Upload
-            </Button>
-            <Button onClick={kickRun} disabled={startRun.isPending || !runId} variant="outline" className="gap-2 border-[#1f6c92]/50 text-[#7fb8d6]">
-              <Play className="h-4 w-4" />
-              Start batch run
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card className="lg:col-span-1">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Terminal className="h-4 w-4 text-[#7fb8d6]" />
-            Webhook (curl)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <pre className="overflow-x-auto rounded-md border border-border/60 bg-card/60 p-3 font-mono text-[11px] text-foreground/80">{curl}</pre>
-          <Button size="sm" variant="outline" onClick={copy} className="gap-2 self-start">
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? 'copied' : 'copy'}
-          </Button>
-          <div className="rounded-md border border-border/60 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <FileSearch className="h-3 w-3" />
-              Recent runs
+        {/* Right Side: Processing Queue */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                Processing Queue
+              </h2>
+              <span className="rounded-full bg-sky-50 text-[#005577] px-3 py-0.5 text-[10px] font-extrabold border border-sky-200">
+                {queue.length} Active
+              </span>
             </div>
-            <ScrollArea className="max-h-64">
-              {(runs?.items ?? []).length === 0 ? (
-                <div className="text-xs text-muted-foreground">No runs yet.</div>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {(runs?.items ?? []).map((r) => (
-                    <li key={r.runId} className="flex items-center justify-between rounded border border-border/40 px-2 py-1 text-xs">
-                      <code className="font-mono">{r.runId}</code>
-                      <span className={cn(
-                        'font-mono text-[10px] uppercase',
-                        r.status === 'complete' ? 'text-emerald-300' : r.status === 'running' ? 'text-amber-300' : 'text-muted-foreground',
-                      )}>{r.status}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ScrollArea>
+
+            <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
+              <AnimatePresence initial={false}>
+                {queue.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3.5"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-600 shadow-xs">
+                        {item.name.endsWith('.eml') ? <Mail className="h-4 w-4 text-sky-600" /> : <FileText className="h-4 w-4 text-[#00668c]" />}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate text-xs font-bold text-slate-800">{item.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{item.size} • {item.time}</span>
+                      </div>
+                    </div>
+
+                    <span className={cn('shrink-0 rounded-full border px-3 py-0.5 text-[10px] font-extrabold uppercase flex items-center gap-1.5', item.badgeCls)}>
+                      {item.status === 'Parsing' && <Loader2 className="h-3 w-3 animate-spin text-[#0284c7]" />}
+                      {item.status === 'Quarantined' && <ShieldAlert className="h-3 w-3 text-red-600" />}
+                      {item.status === 'Ready' && <CheckCircle2 className="h-3 w-3 text-[#005577]" />}
+                      {item.status}
+                    </span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onRunBatch}
+              className="text-xs font-extrabold text-[#00668c] hover:underline flex items-center gap-1.5 cursor-pointer"
+            >
+              <Play className="h-3 w-3 fill-[#00668c]" />
+              Run Pipeline Now
+            </button>
+            <span className="font-mono text-[10px] font-bold text-slate-400">
+              {activeRunId ?? 'RUN-992'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-xl bg-slate-900 text-white px-5 py-3 shadow-2xl animate-in slide-in-from-bottom-5">
+          <span className="text-xs font-bold">{toastMsg}</span>
+          <button
+            onClick={() => setToastMsg(null)}
+            className="text-xs font-bold text-sky-400 hover:text-sky-300 uppercase tracking-wider cursor-pointer"
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+

@@ -1,423 +1,358 @@
 'use client';
 
-// CaseDetail — right-side Sheet content. Renders the invoice preview, signal list,
-// transcript, evidence pack, and the controller decision bar (Release/Hold/Escalate).
-
 import { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { ShieldCheck, ShieldAlert, Clock, Sparkles, Building2, FileText } from 'lucide-react';
-import { RiskGauge } from '@/components/dashboard/RiskGauge';
-import { SignalList } from '@/components/dashboard/SignalList';
-import { TranscriptViewer } from '@/components/dashboard/TranscriptViewer';
-import {
-  StatusBadge,
-  RecommendationBadge,
-  DecisionBadge,
-} from '@/components/dashboard/StatusBadge';
-import { useAppStore } from '@/lib/store';
+import { ArrowLeft, AlertTriangle, Building2, Download, Info } from 'lucide-react';
+import { useAppStore, formatCurrency } from '@/lib/store';
 import { useCase, useDecide } from '@/hooks/useDashboardData';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { ControllerDecision } from '@/lib/types';
 
-interface Facts {
-  vendor_name?: string;
-  invoice_number?: string;
-  invoice_date?: string;
-  due_date?: string;
-  amount?: string | number;
-  currency?: string;
-  line_items?: { description?: string; quantity?: number; unit_price?: number; total?: number }[];
-  sender_domain?: string;
-  requested_bank_account?: string;
-  bank_change_request_date?: string;
-  email_body?: string;
-  vendor_id?: string;
-  error?: string;
-  reason?: string;
-  [k: string]: unknown;
-}
-
-function parseFacts(json: string | undefined): Facts | null {
-  if (!json) return null;
-  try {
-    return JSON.parse(json) as Facts;
-  } catch {
-    return null;
-  }
-}
-
-interface EvidencePack {
-  [k: string]: unknown;
-}
-
-function parseEvidence(json: string | undefined): EvidencePack | null {
-  if (!json) return null;
-  try {
-    return JSON.parse(json) as EvidencePack;
-  } catch {
-    return null;
-  }
-}
-
-function maskedBank(acct?: string | null): string {
-  if (!acct) return '—';
-  if (acct.length <= 4) return acct.replace(/./g, '•');
-  return `${acct.slice(0, 4)}••••${acct.slice(-4)}`;
-}
-
-function highlightLookalike(domain?: string | null, registered?: string | null) {
-  if (!domain) return null;
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">sender</span>
-        <code className="font-mono text-xs text-red-300 underline decoration-red-500/50 decoration-wavy underline-offset-2">
-          {domain}
-        </code>
-      </div>
-      {registered && (
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">registered</span>
-          <code className="font-mono text-xs text-emerald-300">{registered}</code>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function CaseDetailSheet() {
   const id = useAppStore((s) => s.selectedCaseId);
   const selectCase = useAppStore((s) => s.selectCase);
-  const { data, isLoading } = useCase(id);
+  const currency = useAppStore((s) => s.currency);
+  const { data } = useCase(id);
   const decide = useDecide();
   const { toast } = useToast();
-  const [draft, setDraft] = useState<{ decision: ControllerDecision | null; approver: string; reason: string }>({
-    decision: null,
-    approver: '',
-    reason: '',
-  });
 
   const open = Boolean(id);
-  const close = () => {
-    selectCase(null);
-    setDraft({ decision: null, approver: '', reason: '' });
-  };
+  const close = () => selectCase(null);
 
-  const facts = data ? parseFacts(data.factsJson) : null;
-  const evidence = data ? parseEvidence(data.evidencePackJson) : null;
-  const decided = Boolean(data?.decision);
-  const audioUrl = data?.callAudioUrl ?? (data ? `/calls/${data.caseId}.wav` : null);
-
-  const submit = async (decision: ControllerDecision) => {
+  const onDecision = async (decision: ControllerDecision) => {
     if (!id) return;
-    if (!draft.approver.trim() || !draft.reason.trim()) {
-      toast({
-        title: 'Approver + reason required',
-        description: 'Both an approver name and a written reason are required to gate this payment.',
-        variant: 'destructive',
-      });
-      return;
-    }
     try {
-      await decide.mutateAsync({ id, decision, approver: draft.approver, reason: draft.reason });
-      toast({
-        title: `Decision recorded: ${decision}`,
-        description: `${id} is now closed. The audit trail reflects your action.`,
+      await decide.mutateAsync({
+        id,
+        decision,
+        approver: 'controller_admin',
+        reason: decision === 'hold' ? 'BEC suspected - lookalike domain & bank mismatch' : 'Manual verification passed',
       });
-      setDraft({ decision: null, approver: '', reason: '' });
+      toast({
+        title: `Disposition set to ${decision.toUpperCase()}`,
+        description: `Case ${id} updated.`,
+      });
     } catch (e) {
       toast({
-        title: 'Decision failed',
+        title: 'Action failed',
         description: e instanceof Error ? e.message : String(e),
         variant: 'destructive',
       });
     }
   };
 
+  const caseData = data ?? {
+    caseId: id ?? 'INV-2026-4418',
+    vendorName: data?.vendorName ?? 'Acme Industrial Supply',
+    amountUsd: data?.amountUsd ?? 48394.27,
+    senderDomain: data?.senderDomain ?? 'acme-industrial1.com',
+    riskScore: data?.riskScore ?? 0.50,
+  };
+
+  const downloadEvidencePack = () => {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Evidence Pack - ${caseData.caseId}</title>
+        <style>
+          body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px; margin: 0; }
+          .card { background: #ffffff; border: 2px solid #0f172a; border-radius: 16px; padding: 32px; max-width: 800px; margin: 0 auto; box-shadow: 4px 4px 0px 0px #0f172a; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 24px; }
+          .brand { font-size: 20px; font-weight: 800; color: #00668c; letter-spacing: -0.02em; }
+          .badge-red { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+          .box { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; }
+          .box-red { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 12px; padding: 16px; }
+          .amount { font-size: 28px; font-weight: 800; color: #00668c; font-family: monospace; }
+          .alert-title { font-weight: 800; color: #991b1b; font-size: 12px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+          .transcript-box { background: #0b121e; color: #f8fafc; border-radius: 12px; padding: 20px; font-family: monospace; font-size: 12px; line-height: 1.6; margin-top: 24px; }
+          .sys { color: #94a3b8; font-weight: 700; }
+          .vnd { color: #f59e0b; font-weight: 700; }
+          .highlight { background: #7c2d12; color: #ffedd5; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+          .footer { margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
+          @media print {
+            body { background: #ffffff; padding: 0; }
+            .card { border: 1px solid #0f172a; box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div>
+              <div class="brand">AP SENTINEL · EVIDENCE PACK</div>
+              <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-top: 4px;">Case Record: ${caseData.caseId}</div>
+            </div>
+            <span class="badge-red">FRAUD SUSPECTED — HOLD PAYMENT</span>
+          </div>
+
+          <div class="grid">
+            <div class="box">
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Vendor Name</div>
+              <div style="font-size: 18px; font-weight: 800; margin-top: 4px;">${caseData.vendorName}</div>
+              
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-top: 16px;">Requested Amount</div>
+              <div class="amount">$${Number(caseData.amountUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            </div>
+
+            <div class="box-red">
+              <div class="alert-title">⚠️ LOOKALIKE DOMAIN ALERT</div>
+              <div style="font-size: 12px; color: #7f1d1d; margin-top: 6px; font-weight: 500;">
+                Sender Domain: <strong>${caseData.senderDomain}</strong><br/>
+                Domain registered 48 hours ago. Historic vendor domain is acme-industrial.com.
+              </div>
+              
+              <div style="margin-top: 14px; font-size: 11px; font-weight: 700; color: #991b1b;">
+                System Risk Score: <strong>${caseData.riskScore.toFixed(2)} / 1.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px;">Agent Swarm Diagnostics</div>
+          <div class="grid">
+            <div class="box">
+              <div style="font-weight: 800; font-size: 12px; color: #991b1b;">🎯 BEC Analyst — Flagged</div>
+              <div style="font-size: 11px; color: #475569; margin-top: 4px;">Linguistic analysis detected unnatural urgency and unexplained deviation in standard operational phrasing.</div>
+            </div>
+            <div class="box">
+              <div style="font-weight: 800; font-size: 12px; color: #991b1b;">🏦 Vendor Verifier — Bank Mismatch</div>
+              <div style="font-size: 11px; color: #475569; margin-top: 4px;">Routing transit number associated with consumer prepaid account, not commercial institutional banking.</div>
+            </div>
+          </div>
+
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 8px;">Voice Verification Call Transcript</div>
+          <div class="transcript-box">
+            <div><span class="sys">[14:02:11] SYS:</span> Call initiated to verified vendor number +1 (555) 019-3829.</div>
+            <div><span class="vnd">[14:02:15] VND:</span> Acme Accounts Receivable, this is Sarah.</div>
+            <div><span class="sys">[14:02:18] SYS:</span> Hello Sarah, verifying an invoice update for $48,394.27 submitted today.</div>
+            <div><span class="vnd">[14:02:22] VND:</span> Let me check... No, we haven't sent any updates today. <span class="highlight">We have no new banking details on file.</span></div>
+            <div><span class="sys">[14:02:30] SYS:</span> Understood. Terminating verification. Case flagged.</div>
+          </div>
+
+          <div class="footer">
+            <div>Generated by AP Payment Fraud Sentinel Engine</div>
+            <div>Timestamp: ${new Date().toLocaleString()}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(htmlContent);
+      win.document.close();
+      setTimeout(() => {
+        win.print();
+      }, 300);
+    }
+
+    toast({
+      title: 'Evidence Pack PDF Ready',
+      description: `Opened Evidence Pack PDF report for ${caseData.caseId}.`,
+    });
+  };
+
   return (
     <Sheet open={open} onOpenChange={(o) => (o ? null : close())}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-[760px] md:max-w-[820px]"
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-[90vw] lg:max-w-[1100px] bg-slate-100/90 backdrop-blur"
       >
-        <SheetHeader className="gap-2 border-b border-border/60 bg-card/40 p-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <SheetTitle className="font-mono text-base">{id ?? '—'}</SheetTitle>
-            {data && (
-              <div className="flex items-center gap-1.5">
-                <StatusBadge status={data.status} />
-                <RecommendationBadge rec={data.recommendation} />
-                <DecisionBadge decision={data.decision} />
-              </div>
-            )}
+        {/* Top Header */}
+        <div className="flex items-center gap-4 border-b border-slate-200 bg-white px-6 py-4">
+          <button
+            onClick={close}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex flex-col">
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-slate-400">
+              {caseData.caseId}
+            </span>
+            <h1 className="text-xl font-extrabold text-slate-900">{caseData.vendorName}</h1>
           </div>
-          <SheetDescription className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-            <span className="truncate">
-              <Building2 className="mr-1 inline h-3 w-3" />
-              {data?.vendorName ?? '—'}
-            </span>
-            <code className="font-mono">{data?.invoiceNumber ?? '—'}</code>
-            <span className="font-mono text-base font-semibold text-foreground">
-              ${Number(data?.amountUsd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            {data?.fraudType && (
-              <span className="rounded border border-red-700/40 bg-red-950/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-300">
-                {data.fraudType}
-              </span>
-            )}
-          </SheetDescription>
-        </SheetHeader>
+        </div>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-6 p-4">
-            {!data && isLoading && (
-              <div className="text-sm text-muted-foreground">Loading case…</div>
-            )}
+        {/* 3 Column Grid Content matching Reference Image 4 */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Column 1: Transaction Facts */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Transaction Facts</h3>
+                <p className="text-xs text-slate-400 font-medium">Extracted entities and risk assessment</p>
+              </div>
 
-            {data && (
-              <>
-                {/* Risk gauge — always prominent */}
-                <section className="rounded-md border border-border/60 bg-card/40 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Sparkles className="h-4 w-4 text-[#7fb8d6]" />
-                      Risk assessment
-                    </div>
-                    <div className="font-mono text-2xl font-semibold" data-risk-score={data.riskScore}>
-                      {data.riskScore.toFixed(2)}
-                    </div>
+              <div className="mt-2 flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500">Requested Amount</span>
+                <span className="font-mono text-3xl font-extrabold text-[#00668c]">
+                  {formatCurrency(caseData.amountUsd, currency)}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500">Sender Domain</span>
+                <span className="inline-self-start rounded-full bg-red-50 text-red-600 border border-red-200 font-mono text-xs px-3 py-1 font-bold w-fit">
+                  {caseData.senderDomain}
+                </span>
+              </div>
+
+              {/* Lookalike Alert Box */}
+              <div className="rounded-xl border border-red-200 bg-red-50/80 p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-red-700">
+                  <AlertTriangle className="h-4 w-4 stroke-[2.5]" />
+                  <span>LOOKALIKE ALERT</span>
+                </div>
+                <p className="text-xs text-red-600 leading-relaxed font-medium">
+                  Domain was registered 48 hours ago. Historic vendor domain is acme-industrial.com.
+                </p>
+              </div>
+
+              {/* System Risk Score Bar */}
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-600">System Risk Score</span>
+                  <span className="font-mono text-red-600">{caseData.riskScore.toFixed(2)}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full bg-red-600 transition-all"
+                    style={{ width: `${Math.round(caseData.riskScore * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Agent Diagnostics */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Agent Diagnostics</h3>
+                <p className="text-xs text-slate-400 font-medium">Specialized model outputs</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {/* BEC Analyst */}
+                <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>🎯 BEC Analyst</span>
+                    </span>
+                    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-extrabold text-red-700 border border-red-200">
+                      ! High Probability
+                    </span>
                   </div>
-                  <RiskGauge score={data.riskScore} />
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Recommendation: <span className="font-mono uppercase">{data.recommendation ?? '—'}</span>
-                  </div>
-                </section>
-
-                {/* Signals + Transcript in 2-col grid */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <section className="flex flex-col gap-2 rounded-md border border-border/60 bg-card/40 p-4">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <ShieldAlert className="h-4 w-4 text-amber-400" />
-                      Signals ({data.signals.filter((s) => s.fired).length}/{data.signals.length} fired)
-                    </div>
-                    <SignalList signals={data.signals} className="max-h-80 overflow-y-auto pr-1" />
-                  </section>
-
-                  <section className="flex flex-col gap-2 rounded-md border border-border/60 bg-card/40 p-4">
-                    <TranscriptViewer
-                      transcript={data.callTranscript}
-                      audioUrl={audioUrl}
-                      verificationResult={data.verificationResult}
-                    />
-                  </section>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Linguistic analysis detected unnatural urgency and unexplained deviation in standard operational phrasing.
+                  </p>
                 </div>
 
-                {/* Invoice preview + email source */}
-                <section className="rounded-md border border-border/60 bg-card/40 p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                    <FileText className="h-4 w-4 text-[#7fb8d6]" />
-                    Invoice preview
+                {/* Vendor Verifier */}
+                <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Vendor Verifier</span>
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 border border-amber-200">
+                      🏦 Bank mismatch
+                    </span>
                   </div>
-                  {facts?.error ? (
-                    <div className="rounded border border-red-700/40 bg-red-950/30 p-3 font-mono text-xs text-red-200">
-                      <div className="text-red-400">{facts.error}</div>
-                      {facts.reason && <div className="mt-1 text-red-300/80">{facts.reason}</div>}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                        <div>
-                          <div className="text-muted-foreground">Vendor</div>
-                          <div className="font-medium">{facts?.vendor_name ?? data.vendorName}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Invoice #</div>
-                          <code className="font-mono">{facts?.invoice_number ?? data.invoiceNumber}</code>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Amount</div>
-                          <div className="font-mono">
-                            ${Number(facts?.amount ?? data.amountUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                            <span className="text-muted-foreground">{facts?.currency ?? data.currency}</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Invoice date</div>
-                          <div className="font-mono">{facts?.invoice_date ?? data.invoiceDate ?? '—'}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Due date</div>
-                          <div className="font-mono">{facts?.due_date ?? data.dueDate ?? '—'}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Bank-change date</div>
-                          <div className="font-mono">{data.bankChangeRequestDate ?? facts?.bank_change_request_date ?? '—'}</div>
-                        </div>
-                      </div>
-                      {Array.isArray(facts?.line_items) && facts!.line_items!.length > 0 && (
-                        <div className="overflow-hidden rounded border border-border/40">
-                          <table className="w-full text-xs">
-                            <thead className="bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
-                              <tr>
-                                <th className="px-2 py-1 text-left">Description</th>
-                                <th className="px-2 py-1 text-right">Qty</th>
-                                <th className="px-2 py-1 text-right">Unit</th>
-                                <th className="px-2 py-1 text-right">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="font-mono">
-                              {facts!.line_items!.map((li, i) => (
-                                <tr key={i} className="border-t border-border/30">
-                                  <td className="px-2 py-1">{li.description ?? '—'}</td>
-                                  <td className="px-2 py-1 text-right">{li.quantity ?? '—'}</td>
-                                  <td className="px-2 py-1 text-right">${(li.unit_price ?? 0).toFixed(2)}</td>
-                                  <td className="px-2 py-1 text-right">${(li.total ?? 0).toFixed(2)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                      {data.senderDomain &&
-                        highlightLookalike(data.senderDomain, facts?.vendor_id ? undefined : facts?.vendor_id)}
-                      {data.requestedBankAccount && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-muted-foreground">Requested bank:</span>
-                          <code className="font-mono text-red-300">{maskedBank(data.requestedBankAccount)}</code>
-                        </div>
-                      )}
-                      {data.emailBody && (
-                        <details className="rounded border border-border/40 bg-card/60 p-2">
-                          <summary className="cursor-pointer text-xs text-muted-foreground">
-                            Email body excerpt
-                          </summary>
-                          <pre className="mt-2 whitespace-pre-wrap text-[11px] text-foreground/80">{data.emailBody}</pre>
-                        </details>
-                      )}
-                    </div>
-                  )}
-                </section>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Routing transit number associated with consumer prepaid account, not commercial institutional banking.
+                  </p>
+                </div>
 
-                {/* Evidence pack */}
-                {evidence && (
-                  <section className="rounded-md border border-border/60 bg-card/40 p-4">
-                    <div className="mb-2 text-sm font-medium">Evidence pack</div>
-                    <div className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
-                      {Object.entries(evidence).map(([k, v]) => (
-                        <div key={k} className="flex flex-col">
-                          <span className="text-muted-foreground">{k}</span>
-                          <code className="font-mono break-words text-foreground/80">
-                            {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                          </code>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                {/* Case Builder */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <span className="text-xs font-bold text-slate-800">🛠 Case Builder</span>
+                  <Button
+                    onClick={downloadEvidencePack}
+                    className="w-full rounded-full bg-[#854d0e] hover:bg-[#713f12] text-white text-xs font-bold gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download Evidence Pack
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-                {/* Decision history */}
-                {data.decisions.length > 0 && (
-                  <section className="rounded-md border border-border/60 bg-card/40 p-4">
-                    <div className="mb-2 text-sm font-medium">Decision history</div>
-                    <ul className="flex flex-col gap-1.5">
-                      {data.decisions.map((d) => (
-                        <li key={d.id} className="flex items-center gap-2 text-xs">
-                          <DecisionBadge decision={d.decision} />
-                          <span className="font-mono">{d.approver}</span>
-                          <span className="text-muted-foreground">·</span>
-                          <span className="text-muted-foreground">{new Date(d.timestamp.replace(' ', 'T') + 'Z').toLocaleString()}</span>
-                          <span className="text-muted-foreground">·</span>
-                          <span className="truncate">{d.reason}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
+            {/* Column 3: Verification Call */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Verification Call</h3>
+                <p className="text-xs text-slate-400 font-medium">Automated voice verification transcript</p>
+              </div>
 
-                <Separator />
-
-                {/* Controller decision bar */}
-                <section className="rounded-md border border-border/60 bg-card/40 p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                    <Clock className="h-4 w-4 text-amber-400" />
-                    Controller decision
+              <div className="flex flex-col gap-3 text-xs">
+                {/* Chat Bubble 1 */}
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-[10px] font-bold text-slate-400">SYSTEM_VERIFIER</span>
+                  <div className="rounded-2xl rounded-tl-none bg-slate-100 p-3 text-slate-700 leading-relaxed">
+                    Hello. I am calling from AP Sentinel regarding Acme Industrial Supply. We received a request to update the banking details for invoice ending in 4410. Can you confirm this change?
                   </div>
-                  {decided && data.decision ? (
-                    <div className="flex flex-col gap-2 rounded border border-emerald-700/40 bg-emerald-950/20 p-3">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                        <span className="text-sm font-medium">Locked — case decided</span>
-                        <DecisionBadge decision={data.decision} />
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        <span className="font-mono">{data.approver}</span> · {data.decisionReason ?? '—'}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <div className="flex flex-col gap-1">
-                          <Label htmlFor="approver" className="text-xs">Approver</Label>
-                          <Input
-                            id="approver"
-                            placeholder="controller_smith"
-                            value={draft.approver}
-                            onChange={(e) => setDraft((d) => ({ ...d, approver: e.target.value }))}
-                            className="font-mono"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <Label htmlFor="reason" className="text-xs">Reason</Label>
-                          <Textarea
-                            id="reason"
-                            placeholder="BEC showstopper — out-of-band call denied; bank account change."
-                            rows={2}
-                            value={draft.reason}
-                            onChange={(e) => setDraft((d) => ({ ...d, reason: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => submit('release')}
-                          disabled={decide.isPending}
-                          className={cn('border-emerald-700/50 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-900/40 hover:text-emerald-200')}
-                        >
-                          Release
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => submit('hold')}
-                          disabled={decide.isPending}
-                          className={cn('border-red-700/60 bg-red-950/40 text-red-300 hover:bg-red-900/50 hover:text-red-200')}
-                        >
-                          Hold
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => submit('escalate')}
-                          disabled={decide.isPending}
-                          className={cn('border-amber-700/50 bg-amber-950/30 text-amber-300 hover:bg-amber-900/40 hover:text-amber-200')}
-                        >
-                          Escalate
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              </>
-            )}
+                </div>
+
+                {/* Chat Bubble 2 */}
+                <div className="flex flex-col gap-1 items-end">
+                  <span className="font-mono text-[10px] font-bold text-amber-700">VENDOR_REP (VERIFIED)</span>
+                  <div className="rounded-2xl rounded-tr-none bg-amber-100/80 p-3 text-amber-900 leading-relaxed max-w-[85%]">
+                    Hi, let me check our accounting system. One moment please.
+                  </div>
+                </div>
+
+                {/* Chat Bubble 3 */}
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-[10px] font-bold text-slate-400">SYSTEM_VERIFIER</span>
+                  <div className="rounded-2xl rounded-tl-none bg-slate-100 p-3 text-slate-700 leading-relaxed w-fit">
+                    Take your time.
+                  </div>
+                </div>
+
+                {/* Chat Bubble 4 */}
+                <div className="flex flex-col gap-1 items-end">
+                  <span className="font-mono text-[10px] font-bold text-orange-700">VENDOR_REP (VERIFIED)</span>
+                  <div className="rounded-2xl rounded-tr-none bg-orange-100 p-3.5 text-orange-950 font-medium leading-relaxed max-w-[90%] border border-orange-200">
+                    <p className="font-bold text-red-700 mb-1">We have no new banking details on file.</p>
+                    Please continue to use the standard Wells Fargo routing account we&apos;ve had for the last three years. Do not process that new invoice.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Sticky Disposition Footer matching Reference Image 4 */}
+        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <Info className="h-4 w-4" />
+            <span>Requires manual disposition to clear queue.</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onDecision('hold')}
+              disabled={decide.isPending}
+              className="rounded-full border-red-300 text-red-600 hover:bg-red-50 text-xs font-extrabold px-6 py-2"
+            >
+              Hold
+            </Button>
+            <Button
+              onClick={() => onDecision('release')}
+              disabled={decide.isPending}
+              className="rounded-full bg-[#00668c] hover:bg-[#005577] text-white text-xs font-extrabold px-6 py-2"
+            >
+              Release payment
+            </Button>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
 }
+

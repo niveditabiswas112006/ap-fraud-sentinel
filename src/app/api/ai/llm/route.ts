@@ -1,8 +1,7 @@
 // POST /api/ai/llm
-// Server-side only wrapper around z-ai-web-dev-sdk chat completions.
+// Server-side wrapper around z-ai-web-dev-sdk and Ollama (local LLM).
 // Body: { system, user, max_tokens?, temperature? }
-// Returns: { text } — or { text: '' } on failure (worker treats empty as "use deterministic fallback").
-// NEVER import z-ai-web-dev-sdk into client code.
+// Returns: { text } — or { text: '' } on failure.
 
 import { NextResponse } from 'next/server';
 
@@ -31,8 +30,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ text: '' }, { status: 200 });
   }
 
+  // 1. Try local Ollama first for max speed & local reliability
   try {
-    // Dynamic import keeps z-ai-web-dev-sdk out of any client bundle.
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    const ollamaModel = process.env.OLLAMA_MODEL || 'llama3.2';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    const ollamaRes = await fetch(`${ollamaHost}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: ollamaModel,
+        messages: [
+          ...(system ? [{ role: 'system', content: system }] : []),
+          { role: 'user', content: user },
+        ],
+        max_tokens: body.max_tokens ?? 250,
+        temperature: body.temperature ?? 0.1,
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (ollamaRes.ok) {
+      const data = await ollamaRes.json();
+      const text = data?.choices?.[0]?.message?.content ?? '';
+      if (text) {
+        return NextResponse.json({ text: typeof text === 'string' ? text : String(text ?? '') }, { status: 200 });
+      }
+    }
+  } catch {
+    // Continue to z-ai fallback if local Ollama fails
+  }
+
+  // 2. Try z-ai-web-dev-sdk fallback
+  try {
     const ZAIModule = (await import('z-ai-web-dev-sdk')) as { default?: any };
     const ZAI = ZAIModule.default ?? (ZAIModule as any);
     const zai = await ZAI.create();
@@ -43,12 +78,7 @@ export async function POST(req: Request) {
         { role: 'user', content: user },
       ],
       thinking: { type: 'disabled' },
-      ...(typeof body.max_tokens === 'number' && body.max_tokens > 0
-        ? { max_tokens: body.max_tokens }
-        : {}),
-      ...(typeof body.temperature === 'number'
-        ? { temperature: body.temperature }
-        : {}),
+      max_tokens: body.max_tokens ?? 250,
     });
 
     const text: string =
@@ -56,10 +86,13 @@ export async function POST(req: Request) {
       completion?.choices?.[0]?.text ??
       '';
 
-    return NextResponse.json({ text: typeof text === 'string' ? text : String(text ?? '') }, { status: 200 });
-  } catch (err) {
-    console.error('[/api/ai/llm] error:', err instanceof Error ? err.message : String(err));
-    // Worker treats empty string as "use deterministic fallback".
-    return NextResponse.json({ text: '' }, { status: 200 });
+    if (text) {
+      return NextResponse.json({ text: typeof text === 'string' ? text : String(text ?? '') }, { status: 200 });
+    }
+  } catch {
+    // Return empty fallback gracefully
   }
+
+  return NextResponse.json({ text: '' }, { status: 200 });
 }
+

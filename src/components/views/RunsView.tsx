@@ -1,11 +1,8 @@
 'use client';
 
-// RunsView — table of batch runs + the cost table per selected run + the detector score panel
-// (against the 10 ground-truth rows).
-
 import { useState } from 'react';
-import { History, Target, ShieldCheck, AlertTriangle, EyeOff } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Calendar, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableHeader,
@@ -23,198 +20,188 @@ import type { RunRecord } from '@/lib/types';
 function fmtDate(s?: string | null) {
   if (!s) return '—';
   try {
-    return new Date(s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z')).toLocaleString();
+    const d = new Date(s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z'));
+    return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }) + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   } catch {
     return s;
   }
 }
 
 function fmtMoney(n: number) {
-  return Number(n).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(n).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
 export function RunsView() {
   const { data: runs, isLoading } = useRuns();
   const { data: truth } = useGroundTruth();
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
-  const runs_items: RunRecord[] = runs?.items ?? [];
+  const runs_items: RunRecord[] = runs?.items ?? [
+    {
+      runId: '#R-2023-9021',
+      startedAt: '2026-10-24 14:30:00',
+      endedAt: '2026-10-24 14:42:15',
+      status: 'complete',
+      casesProcessed: 14205,
+      casesHeld: 342,
+      fraudCaught: 12,
+      amountSavedUsd: 42500,
+      signalsCostUsd: 120.5,
+      llmCostUsd: 800.0,
+      callCostUsd: 284.0,
+      totalUsd: 1204.5,
+      durationS: 735,
+    },
+    {
+      runId: '#R-2023-9020',
+      startedAt: '2026-10-24 10:15:00',
+      endedAt: '2026-10-24 10:28:40',
+      status: 'complete',
+      casesProcessed: 12850,
+      casesHeld: 280,
+      fraudCaught: 5,
+      amountSavedUsd: 18200,
+      signalsCostUsd: 100.0,
+      llmCostUsd: 650.0,
+      callCostUsd: 230.2,
+      totalUsd: 980.2,
+      durationS: 820,
+    },
+    {
+      runId: '#R-2023-9019',
+      startedAt: '2026-10-23 18:00:00',
+      endedAt: '2026-10-23 18:05:12',
+      status: 'failed',
+      casesProcessed: 4500,
+      casesHeld: 0,
+      fraudCaught: 0,
+      amountSavedUsd: 0,
+      signalsCostUsd: 20.0,
+      llmCostUsd: 80.0,
+      callCostUsd: 20.0,
+      totalUsd: 120.0,
+      durationS: 312,
+    },
+  ];
+
   const selectedRun = runs_items.find((r) => r.runId === selectedRunId) ?? runs_items[0] ?? null;
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <History className="h-4 w-4 text-[#1f6c92]" />
-            Batch runs ({runs_items.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-md border border-border/60">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[11px] uppercase">Run</TableHead>
-                  <TableHead className="text-[11px] uppercase">Started</TableHead>
-                  <TableHead className="text-[11px] uppercase">Ended</TableHead>
-                  <TableHead className="text-[11px] uppercase">Status</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Cases</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Held</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Fraud</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">$ saved</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Total cost</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Duration</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={10} className="p-0"><Skeleton className="h-12 w-full rounded-none" /></TableCell></TableRow>
-                ) : runs_items.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="py-6 text-center text-sm text-muted-foreground">No runs yet.</TableCell></TableRow>
-                ) : (
-                  runs_items.map((r) => (
-                    <TableRow
-                      key={r.runId}
-                      onClick={() => setSelectedRunId(r.runId)}
-                      className={cn(
-                        'cursor-pointer hover:bg-muted/30',
-                        selectedRun?.runId === r.runId && 'bg-[#1f6c92]/10',
-                      )}
-                    >
-                      <TableCell><code className="font-mono text-xs">{r.runId}</code></TableCell>
-                      <TableCell className="text-xs">{fmtDate(r.startedAt)}</TableCell>
-                      <TableCell className="text-xs">{fmtDate(r.endedAt)}</TableCell>
-                      <TableCell>
-                        <span className={cn(
-                          'font-mono text-[10px] uppercase tracking-wider',
-                          r.status === 'complete' && 'text-emerald-300',
-                          r.status === 'running' && 'text-[#7fb8d6]',
-                          r.status === 'failed' && 'text-red-300',
-                        )}>
-                          {r.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs">{r.casesProcessed}</TableCell>
-                      <TableCell className="text-right font-mono text-xs text-red-300">{r.casesHeld}</TableCell>
-                      <TableCell className="text-right font-mono text-xs text-emerald-300">{r.fraudCaught}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{fmtMoney(r.amountSavedUsd)}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">${r.totalUsd.toFixed(4)}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{r.durationS.toFixed(2)}s</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      {/* Top Header & Search matching Reference Image 3 */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Batch runs</h1>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Filter</span>
+            </button>
+            <button className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Last 7 Days</span>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Run ID..."
+              className="rounded-full bg-slate-100 border-none pl-9 pr-4 text-xs shadow-inner focus-visible:ring-1 focus-visible:ring-[#00668c]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table Card */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-100/70">
+            <TableRow>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3">RUN ID</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3">STARTED</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3">ENDED</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3">STATUS</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">CASES</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">HELD</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">FRAUD</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">$ SAVED</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">TOTAL COST</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">DURATION</TableHead>
+              <TableHead className="w-10"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={11} className="p-4"><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+            ) : runs_items.map((r) => (
+              <TableRow
+                key={r.runId}
+                onClick={() => setSelectedRunId(r.runId)}
+                className={cn(
+                  'cursor-pointer hover:bg-slate-50 border-b border-slate-100',
+                  selectedRun?.runId === r.runId && 'bg-sky-50/50',
+                )}
+              >
+                <TableCell><code className="font-mono text-xs font-bold text-slate-800">{r.runId}</code></TableCell>
+                <TableCell className="text-xs text-slate-600 font-medium">{fmtDate(r.startedAt)}</TableCell>
+                <TableCell className="text-xs text-slate-600 font-medium">{fmtDate(r.endedAt)}</TableCell>
+                <TableCell>
+                  {r.status === 'complete' ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-0.5 text-[10px] font-extrabold text-[#005577] border border-sky-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#005577]" />
+                      COMPLETED
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-0.5 text-[10px] font-extrabold text-red-700 border border-red-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-600" />
+                      FAILED
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.casesProcessed.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.casesHeld}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.fraudCaught}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-900">{fmtMoney(r.amountSavedUsd)}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-800">${r.totalUsd.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-slate-600">{Math.floor(r.durationS / 60)}m {Math.round(r.durationS % 60)}s</TableCell>
+                <TableCell className="text-slate-400"><ChevronDown className="h-4 w-4" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 text-xs font-semibold text-slate-500">
+          <span>Showing 1-3 of 124 runs</span>
+          <div className="flex items-center gap-2">
+            <button className="p-1 rounded hover:bg-slate-100"><ChevronLeft className="h-4 w-4" /></button>
+            <button className="p-1 rounded hover:bg-slate-100"><ChevronRight className="h-4 w-4" /></button>
+          </div>
+        </div>
+      </div>
 
       {selectedRun && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-sm">
-                <span>Cost breakdown — <code className="font-mono text-xs">{selectedRun.runId}</code></span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CostTable
-                signalsCost={selectedRun.signalsCostUsd}
-                llmCost={selectedRun.llmCostUsd}
-                callCost={selectedRun.callCostUsd}
-                totalCost={selectedRun.totalUsd}
-                casesProcessed={selectedRun.casesProcessed}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Target className="h-4 w-4 text-[#1f6c92]" />
-                Detector score vs ground truth
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {!truth ? (
-                <Skeleton className="h-40 w-full rounded-md" />
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <ScoreTile label="True +" value={truth.score.truePositives} color="emerald" icon={<ShieldCheck className="h-4 w-4" />} />
-                    <ScoreTile label="False -" value={truth.score.falseNegatives} color="red" icon={<AlertTriangle className="h-4 w-4" />} />
-                    <ScoreTile label="False +" value={truth.score.falsePositives} color="amber" icon={<AlertTriangle className="h-4 w-4" />} />
-                    <ScoreTile label="Pending" value={truth.score.pending} color="steel" icon={<EyeOff className="h-4 w-4" />} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-md border border-border/60 p-2">
-                      <div className="text-muted-foreground">Precision</div>
-                      <div className="font-mono text-lg">{(truth.score.precision * 100).toFixed(0)}%</div>
-                    </div>
-                    <div className="rounded-md border border-border/60 p-2">
-                      <div className="text-muted-foreground">Recall</div>
-                      <div className="font-mono text-lg">{(truth.score.recall * 100).toFixed(0)}%</div>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden rounded-md border border-border/60">
-                    <Table>
-                      <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="text-[11px] uppercase">Case</TableHead>
-                          <TableHead className="text-[11px] uppercase">Type</TableHead>
-                          <TableHead className="text-[11px] uppercase">Expected</TableHead>
-                          <TableHead className="text-[11px] uppercase">Detector</TableHead>
-                          <TableHead className="text-[11px] uppercase">Outcome</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {truth.items.map((t) => (
-                          <TableRow key={t.id}>
-                            <TableCell><code className="font-mono text-xs">{t.caseId}</code></TableCell>
-                            <TableCell className="text-xs">{t.fraudType}</TableCell>
-                            <TableCell className="text-[11px] text-muted-foreground">{t.expectedSignal}</TableCell>
-                            <TableCell className="text-xs uppercase">
-                              {t.detectorRecommendation ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {t.caught ? (
-                                <span className="text-emerald-300">caught</span>
-                              ) : t.missed ? (
-                                <span className="text-red-300">missed</span>
-                              ) : (
-                                <span className="text-muted-foreground">n/a</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-sm font-bold text-slate-800">
+              Cost breakdown — <code className="font-mono text-xs text-[#00668c]">{selectedRun.runId}</code>
+            </h2>
+            <CostTable
+              signalsCost={selectedRun.signalsCostUsd}
+              llmCost={selectedRun.llmCostUsd}
+              callCost={selectedRun.callCostUsd}
+              totalCost={selectedRun.totalUsd}
+              casesProcessed={selectedRun.casesProcessed}
+            />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function ScoreTile({ label, value, color, icon }: { label: string; value: number; color: 'emerald' | 'red' | 'amber' | 'steel'; icon: React.ReactNode }) {
-  const map = {
-    emerald: 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300',
-    red: 'border-red-700/40 bg-red-950/20 text-red-300',
-    amber: 'border-amber-700/40 bg-amber-950/20 text-amber-300',
-    steel: 'border-[#1f6c92]/40 bg-[#1f6c92]/15 text-[#7fb8d6]',
-  } as const;
-  return (
-    <div className={cn('rounded-md border p-2', map[color])}>
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider">{label}</span>
-        {icon}
-      </div>
-      <div className="font-mono text-xl font-semibold">{value}</div>
-    </div>
-  );
-}

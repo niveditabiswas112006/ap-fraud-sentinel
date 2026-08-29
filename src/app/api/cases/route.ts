@@ -40,13 +40,24 @@ export async function GET(req: Request) {
   );
   const offset = (page - 1) * limitRaw;
 
-  // Compose a parameterized WHERE clause — bind every value, no string interpolation.
+  // Compose a parameterized WHERE clause — case-insensitive & flexible matching
   const where: string[] = [];
   const params: (string | number)[] = [];
-  if (status) {
-    where.push(`"status" = ?`);
-    params.push(status);
+
+  if (status && status.toLowerCase() !== 'all') {
+    const sLower = status.toLowerCase();
+    if (sLower === 'held') {
+      where.push(`(LOWER("recommendation") = 'hold' OR LOWER("status") = 'quarantined' OR LOWER("status") = 'reviewed')`);
+    } else if (sLower === 'scored') {
+      where.push(`("riskScore" > 0 OR LOWER("status") = 'scored')`);
+    } else if (sLower === 'closed') {
+      where.push(`(LOWER("status") = 'closed' OR "decision" IS NOT NULL)`);
+    } else {
+      where.push(`LOWER("status") = ?`);
+      params.push(sLower);
+    }
   }
+
   if (vendorId) {
     where.push(`"vendorId" = ?`);
     params.push(vendorId);
@@ -55,10 +66,21 @@ export async function GET(req: Request) {
     where.push(`"runId" = ?`);
     params.push(runId);
   }
-  if (fraudType) {
-    where.push(`"fraudType" = ?`);
-    params.push(fraudType);
+
+  if (fraudType && fraudType.toLowerCase() !== 'all') {
+    const fLower = fraudType.toLowerCase();
+    if (fLower === 'bec') {
+      where.push(`(LOWER("fraudType") LIKE '%bec%' OR LOWER("fraudType") LIKE '%domain%' OR LOWER("signalsJson") LIKE '%domain%')`);
+    } else if (fLower === 'invoice_fraud' || fLower === 'invoice fraud') {
+      where.push(`(LOWER("fraudType") LIKE '%invoice%' OR LOWER("fraudType") LIKE '%fake%' OR LOWER("status") = 'quarantined')`);
+    } else if (fLower === 'duplicate') {
+      where.push(`(LOWER("fraudType") LIKE '%duplicate%' OR LOWER("signalsJson") LIKE '%duplicate%')`);
+    } else {
+      where.push(`LOWER("fraudType") = ?`);
+      params.push(fLower);
+    }
   }
+
   if (search) {
     const s = `%${search}%`;
     where.push(`("caseId" LIKE ? OR "invoiceNumber" LIKE ? OR "vendorName" LIKE ?)`);

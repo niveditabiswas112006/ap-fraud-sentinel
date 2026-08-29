@@ -18,8 +18,9 @@ build/
 .env
 .env.local
 
-# Database
+# Database & Uploads
 db/*.db-journal
+data/uploads/
 
 # Keep RocketRide extension docs & pipe files
 !.rocketride/

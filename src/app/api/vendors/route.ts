@@ -87,3 +87,54 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ items, total, page, limit: limitRaw });
 }
+
+export async function POST(req: Request) {
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: 'invalid json' }, { status: 400 });
+  }
+
+  const legalName = String(body.legalName ?? '').trim();
+  const registeredDomain = String(body.registeredDomain ?? '').trim();
+  const knownPhone = String(body.knownPhone ?? '').trim();
+  const knownBankAccount = String(body.knownBankAccount ?? '').trim();
+  const contactEmail = String(body.contactEmail ?? '').trim();
+
+  if (!legalName || !registeredDomain) {
+    return NextResponse.json({ error: 'legalName and registeredDomain are required' }, { status: 400 });
+  }
+
+  const existingCountRow = (await db.$queryRaw<Array<{ count: number }>>`SELECT COUNT(*) as count FROM "Vendor"`) as Array<{ count: number }>;
+  const count = Number(existingCountRow.at(0)?.count ?? 60);
+  const vendorId = body.vendorId ? String(body.vendorId).trim() : `V-${1001 + count}`;
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    await db.$executeRaw`
+      INSERT INTO "Vendor" (
+        "vendorId", "legalName", "registeredDomain", "knownPhone",
+        "knownBankAccount", "bankAccountAddedDate", "firstInvoiceDate",
+        "address", "contactEmail", "taxId"
+      ) VALUES (
+        ${vendorId}, ${legalName}, ${registeredDomain}, ${knownPhone || '+1 (555) 000-0000'},
+        ${knownBankAccount || '1234567890'}, ${today}, ${today},
+        '100 Enterprise Way', ${contactEmail || `ap@${registeredDomain}`}, 'XX-XXXXXXX'
+      )
+    `;
+
+    return NextResponse.json({
+      ok: true,
+      vendor: {
+        vendorId,
+        legalName,
+        registeredDomain,
+        knownPhone,
+        knownBankAccount,
+      },
+    });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}

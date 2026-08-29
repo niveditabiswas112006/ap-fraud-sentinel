@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "RocketRide Buildathon PS #4" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300668c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>',
   },
   openGraph: {
     title: "AP Payment Fraud Sentinel",

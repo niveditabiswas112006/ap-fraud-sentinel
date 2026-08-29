@@ -172,14 +172,24 @@ export function useRun(id: string | null) {
   });
 }
 
+import { useAppStore } from '@/lib/store';
+
 export function useStartRun() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ batch_path, limit }: { batch_path?: string; limit?: number }) => {
+    mutationFn: async ({ batch_path, limit }: { batch_path?: string; limit?: number } = {}) => {
+      const storeRunId = useAppStore.getState().runId;
+      const targetBatchPath =
+        batch_path || (storeRunId ? `data/uploads/${storeRunId}` : undefined);
+
       const r = await fetch('/api/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_path, limit }),
+        body: JSON.stringify({
+          run_id: storeRunId || undefined,
+          batch_path: targetBatchPath,
+          limit,
+        }),
       });
       if (!r.ok) throw new Error('run start failed');
       return (await r.json()) as { run_id: string; status: string };
@@ -187,6 +197,9 @@ export function useStartRun() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['runs'] });
       qc.invalidateQueries({ queryKey: ['healthz'] });
+      qc.invalidateQueries({ queryKey: ['cases'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+      qc.invalidateQueries({ queryKey: ['vendors'] });
     },
   });
 }

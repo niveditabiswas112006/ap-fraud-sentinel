@@ -28,7 +28,7 @@ from worker.signals import RISK_HOLD_THRESHOLD, SIGNAL_WEIGHTS
 log = logging.getLogger("worker.agents")
 
 LLM_URL = os.environ.get("APFRAUD_LLM_URL", "http://localhost:3000/api/ai/llm")
-LLM_TIMEOUT_S = float(os.environ.get("APFRAUD_LLM_TIMEOUT_S", "15.0"))
+LLM_TIMEOUT_S = float(os.environ.get("APFRAUD_LLM_TIMEOUT_S", "60.0"))
 
 _PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 
@@ -43,21 +43,58 @@ def _load_prompt(name: str) -> str:
         return f"You are the {name} agent in the AP Payment Fraud Sentinel pipeline."
 
 
-async def _call_llm(system: str, user: str, max_tokens: int = 700, temperature: float = 0.2) -> str | None:
-    """POST to /api/ai/llm. Returns the text, or None if the route is unavailable."""
+async def _call_ollama_direct(system: str, user: str, max_tokens: int = 250, temperature: float = 0.1) -> str | None:
+    """Direct fallback to local Ollama (http://localhost:11434) if Next.js route is down or empty."""
+    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.2")
+    url = f"{ollama_host}/v1/chat/completions"
+    payload = {
+        "model": ollama_model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+    try:
+        timeout = aiohttp.ClientTimeout(total=15.0)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(url, json=payload) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    choices = data.get("choices") or []
+                    if choices:
+                        content = choices[0].get("message", {}).get("content")
+                        if content:
+                            log.info("Direct Ollama call succeeded using model %s", ollama_model)
+                            return content
+                else:
+                    log.warning("Direct Ollama call returned status %s", resp.status)
+    except Exception as exc:
+        log.warning("Direct Ollama call unavailable: %s", exc)
+    return None
+
+
+async def _call_llm(system: str, user: str, max_tokens: int = 250, temperature: float = 0.1) -> str | None:
+    """POST to /api/ai/llm. Returns text, or falls back to direct Ollama call."""
     payload = {"system": system, "user": user, "max_tokens": max_tokens, "temperature": temperature}
     try:
-        timeout = aiohttp.ClientTimeout(total=LLM_TIMEOUT_S)
+        timeout = aiohttp.ClientTimeout(total=15.0)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(LLM_URL, json=payload) as resp:
-                if resp.status != 200:
+                if resp.status == 200:
+                    data = await resp.json()
+                    text = data.get("text") or data.get("content")
+                    if text:
+                        return text
+                else:
                     log.debug("LLM route returned %s", resp.status)
-                    return None
-                data = await resp.json()
-                return data.get("text") or data.get("content") or None
     except Exception as exc:
-        log.warning("LLM route unavailable at %s: %s — using deterministic fallback", LLM_URL, exc)
-        return None
+        log.warning("LLM route unavailable at %s: %s — trying direct Ollama", LLM_URL, exc)
+    
+    return await _call_ollama_direct(system, user, max_tokens, temperature)
+
 
 
 def _safe_json(text: str | None) -> dict | None:

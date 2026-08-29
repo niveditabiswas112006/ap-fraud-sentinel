@@ -7,12 +7,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CaseRecord, TraceStage, TraceEvent, CaseStatus } from '@/lib/types';
 
-export type View = 'dashboard' | 'cases' | 'upload' | 'vendors' | 'runs' | 'setup';
+export type View = 'dashboard' | 'cases' | 'upload' | 'vendors' | 'runs';
+export type Currency = 'INR' | 'USD';
 
 export interface AppState {
   // Navigation.
   view: View;
   setView: (v: View) => void;
+
+  // Currency preference ('INR' | 'USD'). Default is 'INR'.
+  currency: Currency;
+  setCurrency: (c: Currency) => void;
 
   // Case-detail Sheet state.
   selectedCaseId: string | null;
@@ -25,6 +30,10 @@ export interface AppState {
   runId: string | null;
   setRunId: (id: string | null) => void;
   setActiveRunId: (id: string | null) => void;
+
+  // Batch execution status ('idle' | 'running' | 'completed').
+  batchStatus: 'idle' | 'running' | 'completed';
+  setBatchStatus: (status: 'idle' | 'running' | 'completed') => void;
 
   stages: TraceStage[];
   resetStages: () => void;
@@ -66,11 +75,21 @@ const STAGE_LABELS: Record<string, string> = {
   gate: 'Gate',
 };
 
+export function formatCurrency(amount: number | string, currency: Currency = 'INR'): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) || 0 : amount;
+  const symbol = currency === 'INR' ? '₹' : '$';
+  const locale = currency === 'INR' ? 'en-IN' : 'en-US';
+  return `${symbol}${num.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       view: 'dashboard',
       setView: (v) => set({ view: v }),
+
+      currency: 'INR',
+      setCurrency: (c) => set({ currency: c }),
 
       selectedCaseId: null,
       selectCase: (id) => set({ selectedCaseId: id }),
@@ -80,12 +99,16 @@ export const useAppStore = create<AppState>()(
       setRunId: (id) => set({ runId: id, activeRunId: id }),
       setActiveRunId: (id) => set({ runId: id, activeRunId: id }),
 
+      batchStatus: 'idle',
+      setBatchStatus: (status) => set({ batchStatus: status }),
+
       stages: EMPTY_STAGES,
-      resetStages: () => set({ stages: EMPTY_STAGES }),
+      resetStages: () => set({ stages: EMPTY_STAGES, batchStatus: 'idle' }),
       resetTrace: () =>
         set({
           activeRunId: null,
           runId: null,
+          batchStatus: 'idle',
           stages: EMPTY_STAGES.map((s) => ({ ...s, status: 'idle' as const })),
           recentEvents: [],
         }),
@@ -108,12 +131,14 @@ export const useAppStore = create<AppState>()(
           set({
             runId: e.runId,
             activeRunId: e.runId,
-            stages: EMPTY_STAGES.map((s) => ({ ...s, status: 'idle' as const })),
+            batchStatus: 'running',
+            stages: EMPTY_STAGES.map((s) => ({ ...s, status: 'running' as const })),
           });
           return;
         }
         if (e.type === 'run_completed') {
           set({
+            batchStatus: 'completed',
             stages: get().stages.map((s) => ({
               ...s,
               status: 'complete' as const,
@@ -175,8 +200,8 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'apsfs-store',
-      // Only persist navigation; trace/ws state is transient.
-      partialize: (s) => ({ view: s.view }) as Partial<AppState>,
+      // Only persist navigation & currency preference.
+      partialize: (s) => ({ view: s.view, currency: s.currency }) as Partial<AppState>,
     },
   ),
 );

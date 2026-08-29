@@ -7,15 +7,19 @@
       "description": "Receives inbound PDF invoice document via HTTP POST.",
       "config": {
         "path": "/master",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "hideForm": true,
         "mode": "Source",
         "parameters": {},
         "type": "webhook"
       },
       "ui": {
-        "position": { "x": 40, "y": 200 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
         "nodeType": "default",
         "formDataValid": true
       }
@@ -25,35 +29,31 @@
       "provider": "ocr",
       "name": "OCR Reader",
       "description": "Extracts text from invoice image.",
-      "input": [
-        {
-          "from": "webhook_1",
-          "lane": "image"
-        }
-      ],
       "config": {
         "model": "tesseract",
         "lang": "eng",
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 260, "y": 200 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
         "nodeType": "default",
-        "formDataValid": true
-      }
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "image",
+          "from": "webhook_1"
+        }
+      ]
     },
     {
       "id": "preprocessor_1",
       "provider": "preprocessor_langchain",
       "name": "Text Chunker",
       "description": "Chunks invoice text into structured documents.",
-      "input": [
-        {
-          "from": "ocr_1",
-          "lane": "text"
-        }
-      ],
       "config": {
         "profile": "default",
         "default": {
@@ -64,45 +64,49 @@
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 480, "y": 200 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 480,
+          "y": 200
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "input": [
+        {
+          "lane": "text",
+          "from": "ocr_1"
+        }
+      ]
     },
     {
       "id": "embedding_1",
       "provider": "embedding_transformer",
       "name": "Document Embedder",
       "description": "Embeds chunked documents into vector space.",
-      "input": [
-        {
-          "from": "preprocessor_1",
-          "lane": "documents"
-        }
-      ],
       "config": {
         "profile": "miniLM",
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 700, "y": 200 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 700,
+          "y": 200
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "input": [
+        {
+          "lane": "documents",
+          "from": "preprocessor_1"
+        }
+      ]
     },
     {
       "id": "qdrant_1",
       "provider": "qdrant",
       "name": "Vendor Master Store",
       "description": "Grounds invoice data against historical vendor master DB.",
-      "input": [
-        {
-          "from": "embedding_1",
-          "lane": "documents"
-        }
-      ],
       "config": {
         "profile": "local",
         "local": {
@@ -113,23 +117,25 @@
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 920, "y": 200 },
-        "measured": { "width": 160, "height": 135 },
+        "position": {
+          "x": 920,
+          "y": 200
+        },
         "nodeType": "default",
-        "formDataValid": true
-      }
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "documents",
+          "from": "embedding_1"
+        }
+      ]
     },
     {
       "id": "agent_rocketride_1",
       "provider": "agent_rocketride",
       "name": "Master Fraud Sentinel Swarm",
       "description": "Multi-agent swarm running 7-stage fraud screening & risk arbitration.",
-      "input": [
-        {
-          "from": "qdrant_1",
-          "lane": "questions"
-        }
-      ],
       "config": {
         "instructions": [
           "Run 7-stage AP payment fraud screening. Arbitrate risk signals and output final decision recommendation."
@@ -138,23 +144,25 @@
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 1140, "y": 200 },
-        "measured": { "width": 160, "height": 86 },
+        "position": {
+          "x": 1140,
+          "y": 200
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "qdrant_1"
+        }
+      ]
     },
     {
       "id": "llm_openai_1",
       "provider": "llm_openai",
       "name": "Swarm LLM Engine",
       "description": "LLM model powering master fraud swarm.",
-      "control": [
-        {
-          "classType": "llm",
-          "from": "agent_rocketride_1"
-        }
-      ],
       "config": {
         "profile": "openai-4o",
         "openai-4o": {
@@ -163,55 +171,67 @@
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 1030, "y": 360 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 1030,
+          "y": 360
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "agent_rocketride_1"
+        }
+      ]
     },
     {
       "id": "memory_internal_1",
       "provider": "memory_internal",
       "name": "Swarm Working Memory",
       "description": "Internal working memory for master agent swarm.",
-      "control": [
-        {
-          "classType": "memory",
-          "from": "agent_rocketride_1"
-        }
-      ],
       "config": {
         "type": "memory_internal",
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 1250, "y": 360 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 1250,
+          "y": 360
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "agent_rocketride_1"
+        }
+      ]
     },
     {
       "id": "response_answers_1",
       "provider": "response_answers",
       "name": "Return Master Decision",
       "description": "Returns full master fraud screening audit decision to client.",
-      "input": [
-        {
-          "from": "agent_rocketride_1",
-          "lane": "answers"
-        }
-      ],
       "config": {
         "laneName": "answers",
         "parameters": {}
       },
       "ui": {
-        "position": { "x": 1360, "y": 200 },
-        "measured": { "width": 160, "height": 66 },
+        "position": {
+          "x": 1360,
+          "y": 200
+        },
         "nodeType": "default",
         "formDataValid": true
-      }
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "agent_rocketride_1"
+        }
+      ]
     }
   ],
   "name": "AP Payment Fraud Sentinel — Master Orchestration Pipeline",
@@ -219,9 +239,11 @@
   "version": 1,
   "source": "webhook_1",
   "project_id": "69a1e026-57c6-4cd2-b712-56d4ec4e7417",
-  "viewport": {
-    "x": 0,
-    "y": 0,
-    "zoom": 1
-  }
+  "isLocked": false,
+  "snapToGrid": true,
+  "snapGridSize": [
+    10,
+    10
+  ],
+  "docRevision": 1
 }

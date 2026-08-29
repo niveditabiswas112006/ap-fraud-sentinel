@@ -1,15 +1,65 @@
 'use client';
 
-// StatCallout — the big-number stat block for the dashboard home.
-// Big mono numbers, small labels, optional accent color, optional delta.
-
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// Helper to extract numeric value & currency/prefix from raw value string
+function parseNumericValue(val: string | number) {
+  if (typeof val === 'number') return { num: val, prefix: '', suffix: '', isMoney: false };
+  const str = String(val).trim();
+  const isMoney = str.startsWith('$');
+  const numStr = str.replace(/[^0-9.]/g, '');
+  const num = parseFloat(numStr) || 0;
+  return { num, prefix: isMoney ? '$' : '', suffix: '', isMoney };
+}
+
+function AnimatedNumber({ value }: { value: string | number }) {
+  const { num, prefix, isMoney } = parseNumericValue(value);
+  const [displayNum, setDisplayNum] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const duration = 1000; // 1.0s smooth count-up
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // Ease out cubic
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      setDisplayNum(Math.floor(easedProgress * num));
+
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        setDisplayNum(num);
+      }
+    };
+
+    window.requestAnimationFrame(step);
+  }, [num]);
+
+  if (isNaN(num)) return <span>{value}</span>;
+
+  const formatted = displayNum.toLocaleString('en-US');
+
+  return (
+    <motion.span
+      key={num}
+      initial={{ opacity: 0.8 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {prefix}
+      {formatted}
+    </motion.span>
+  );
+}
 
 export function StatCallout({
   label,
   value,
   accent = 'default',
-  hint,
   icon,
 }: {
   label: string;
@@ -19,32 +69,65 @@ export function StatCallout({
   icon?: React.ReactNode;
 }) {
   const accentMap: Record<string, string> = {
-    default: 'text-foreground',
-    red: 'text-red-400',
-    emerald: 'text-emerald-400',
-    steel: 'text-[#7fb8d6]',
-    amber: 'text-amber-400',
+    default: 'text-slate-900',
+    red: 'text-red-600',
+    emerald: 'text-[#0f766e]',
+    steel: 'text-[#00668c]',
+    amber: 'text-amber-600',
   };
-  const barMap: Record<string, string> = {
-    default: 'bg-border',
-    red: 'bg-red-500/70',
-    emerald: 'bg-emerald-500/70',
-    steel: 'bg-[#1f6c92]',
-    amber: 'bg-amber-500/70',
+
+  const borderMap: Record<string, string> = {
+    default: 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-lg',
+    red: 'border-red-200 bg-white hover:border-red-300 hover:shadow-red-500/10 hover:shadow-lg',
+    emerald: 'border-emerald-200 bg-white hover:border-emerald-300 hover:shadow-emerald-500/10 hover:shadow-lg',
+    steel: 'border-sky-200 bg-white hover:border-sky-300 hover:shadow-sky-500/10 hover:shadow-lg',
+    amber: 'border-amber-200 bg-white hover:border-amber-300 hover:shadow-amber-500/10 hover:shadow-lg',
   };
+
+  const iconBgMap: Record<string, string> = {
+    default: 'bg-slate-100 text-slate-600 group-hover:bg-slate-900 group-hover:text-white',
+    red: 'bg-red-50 text-red-600 border border-red-100 group-hover:bg-red-600 group-hover:text-white',
+    emerald: 'bg-teal-50 text-[#0f766e] border border-teal-100 group-hover:bg-[#0f766e] group-hover:text-white',
+    steel: 'bg-sky-50 text-[#00668c] border border-sky-100 group-hover:bg-[#00668c] group-hover:text-white',
+    amber: 'bg-amber-50 text-amber-600 border border-amber-100 group-hover:bg-amber-600 group-hover:text-white',
+  };
+
+  const topGlowMap: Record<string, string> = {
+    default: 'bg-slate-300',
+    red: 'bg-red-500',
+    emerald: 'bg-emerald-500',
+    steel: 'bg-[#00668c]',
+    amber: 'bg-amber-500',
+  };
+
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card/80 p-5">
-      <div className={cn('absolute left-0 top-0 h-full w-1', barMap[accent])} />
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          <span>{label}</span>
-          {icon && <span className="opacity-70">{icon}</span>}
-        </div>
-        <div className={cn('font-mono text-3xl font-semibold tracking-tight sm:text-4xl', accentMap[accent])}>
-          {value}
-        </div>
-        {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+    <motion.div
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: 'easeOut' } }}
+      className={cn(
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-5 transition-all duration-300',
+        borderMap[accent]
+      )}
+    >
+      {/* Top Subtle Animated Accent Bar */}
+      <div className={cn('absolute top-0 left-0 right-0 h-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100', topGlowMap[accent])} />
+
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-hover:text-slate-900">
+          {label}
+        </span>
+        {icon && (
+          <div className={cn('flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110 group-hover:rotate-6', iconBgMap[accent])}>
+            {icon}
+          </div>
+        )}
       </div>
-    </div>
+
+      <div className="mt-3 flex items-baseline">
+        <span className={cn('font-instagram text-3xl font-extrabold tracking-tight sm:text-4xl transition-transform duration-300 group-hover:scale-105 origin-left', accentMap[accent])}>
+          <AnimatedNumber value={value} />
+        </span>
+      </div>
+    </motion.div>
   );
 }
+

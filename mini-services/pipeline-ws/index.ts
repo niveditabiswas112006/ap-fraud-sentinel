@@ -105,10 +105,10 @@ function router(req: IncomingMessage, res: ServerResponse): void {
         const connCount = io.engine?.clientsCount ?? 0;
         console.log(
           `[trace] ${event.type} runId=${event.runId}` +
-            (event.stage ? ` stage=${event.stage}/${event.stageStatus ?? '-'}` : '') +
-            (event.caseId ? ` case=${event.caseId}/${event.caseStatus ?? '-'}` : '') +
-            (event.message ? ` msg="${truncate(event.message, 80)}"` : '') +
-            ` -> ${connCount} client(s)`,
+          (event.stage ? ` stage=${event.stage}/${event.stageStatus ?? '-'}` : '') +
+          (event.caseId ? ` case=${event.caseId}/${event.caseStatus ?? '-'}` : '') +
+          (event.message ? ` msg="${truncate(event.message, 80)}"` : '') +
+          ` -> ${connCount} client(s)`,
         );
 
         res.writeHead(202, { 'Content-Type': 'application/json' });

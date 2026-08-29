@@ -44,10 +44,10 @@
       }
     },
     {
-      "id": "llm_openai_1",
-      "provider": "llm_openai",
-      "name": "Agent LLM Reasoning Engine",
-      "description": "LLM model powering agent swarm reasoning.",
+      "id": "llm_ollama_1",
+      "provider": "llm_ollama",
+      "name": "Ollama Agent LLM Reasoning Engine",
+      "description": "Local Ollama model (llama3.2) powering agent swarm reasoning.",
       "control": [
         {
           "classType": "llm",
@@ -55,10 +55,8 @@
         }
       ],
       "config": {
-        "profile": "openai-4o",
-        "openai-4o": {
-          "apikey": "${ROCKETRIDE_OPENAI_KEY}"
-        },
+        "model": "llama3.2",
+        "host": "${OLLAMA_HOST:-http://localhost:11434}",
         "parameters": {}
       },
       "ui": {

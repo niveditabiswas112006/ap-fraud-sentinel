@@ -73,3 +73,49 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   return NextResponse.json({ vendor, payments: paymentRecords, stats });
 }
+
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: 'invalid json' }, { status: 400 });
+  }
+
+  const legalName = body.legalName ? String(body.legalName).trim() : undefined;
+  const registeredDomain = body.registeredDomain ? String(body.registeredDomain).trim() : undefined;
+  const knownPhone = body.knownPhone ? String(body.knownPhone).trim() : undefined;
+  const knownBankAccount = body.knownBankAccount ? String(body.knownBankAccount).trim() : undefined;
+
+  const existing = (await db.$queryRaw<VendorRow[]>`
+    SELECT * FROM "Vendor" WHERE "vendorId" = ${id}
+  `) as VendorRow[];
+  if (existing.length === 0) {
+    return NextResponse.json({ error: 'vendor not found' }, { status: 404 });
+  }
+
+  const current = existing[0];
+  const newName = legalName ?? current.legalName;
+  const newDomain = registeredDomain ?? current.registeredDomain;
+  const newPhone = knownPhone ?? current.knownPhone;
+  const newBank = knownBankAccount ?? current.knownBankAccount;
+
+  await db.$executeRaw`
+    UPDATE "Vendor"
+    SET "legalName" = ${newName},
+        "registeredDomain" = ${newDomain},
+        "knownPhone" = ${newPhone},
+        "knownBankAccount" = ${newBank}
+    WHERE "vendorId" = ${id}
+  `;
+
+  return NextResponse.json({
+    ok: true,
+    vendorId: id,
+    legalName: newName,
+    registeredDomain: newDomain,
+    knownPhone: newPhone,
+    knownBankAccount: newBank,
+  });
+}
