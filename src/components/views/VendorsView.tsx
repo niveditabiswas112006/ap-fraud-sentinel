@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Building2, Search, Edit2, Save, X, Plus } from 'lucide-react';
+import { Building2, Search, Edit2, Save, X, Plus, Upload, FileSpreadsheet } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -38,11 +38,79 @@ function maskedBank(acct?: string) {
   return `${acct.slice(0, 4)}••••${acct.slice(-4)}`;
 }
 
+function parseVendorCsv(text: string) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(cur.trim().replace(/^"|"$/g, ''));
+        cur = '';
+      } else {
+        cur += char;
+      }
+    }
+    result.push(cur.trim().replace(/^"|"$/g, ''));
+    return result;
+  };
+
+  const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+  const getIdx = (keys: string[]) => {
+    for (const k of keys) {
+      const idx = headers.indexOf(k);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const nameIdx = getIdx(['legalname', 'name', 'vendorname', 'vendor']);
+  const domainIdx = getIdx(['registereddomain', 'domain', 'website']);
+  const phoneIdx = getIdx(['knownphone', 'phone', 'contactphone']);
+  const bankIdx = getIdx(['knownbankaccount', 'bankaccount', 'bank', 'account']);
+  const emailIdx = getIdx(['contactemail', 'email']);
+  const idIdx = getIdx(['vendorid', 'id']);
+  const addressIdx = getIdx(['address']);
+  const taxIdx = getIdx(['taxid']);
+
+  const vendors = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseLine(lines[i]);
+    const legalName = nameIdx !== -1 ? row[nameIdx] : '';
+    const registeredDomain = domainIdx !== -1 ? row[domainIdx] : '';
+
+    if (legalName || registeredDomain) {
+      vendors.push({
+        vendorId: idIdx !== -1 && row[idIdx] ? row[idIdx] : undefined,
+        legalName: legalName || registeredDomain,
+        registeredDomain: registeredDomain || legalName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com',
+        knownPhone: phoneIdx !== -1 && row[phoneIdx] ? row[phoneIdx] : '+1 (555) 000-0000',
+        knownBankAccount: bankIdx !== -1 && row[bankIdx] ? row[bankIdx] : '1234567890',
+        contactEmail: emailIdx !== -1 && row[emailIdx] ? row[emailIdx] : `ap@${registeredDomain || 'vendor.com'}`,
+        address: addressIdx !== -1 && row[addressIdx] ? row[addressIdx] : '100 Enterprise Way',
+        taxId: taxIdx !== -1 && row[taxIdx] ? row[taxIdx] : 'XX-XXXXXXX',
+      });
+    }
+  }
+
+  return vendors;
+}
+
 export function VendorsView() {
-  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [addMode, setAddMode] = useState<'single' | 'csv'>('single');
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [parsedCsvVendors, setParsedCsvVendors] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     legalName: '',
@@ -408,77 +476,157 @@ export function VendorsView() {
               Register New Vendor
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Add a new ground-truth vendor to AP Fraud Sentinel for out-of-band verification.
+              Add single vendor details or import a full .csv vendor database.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-3 pt-2">
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Legal Company Name *</label>
-              <Input
-                placeholder="e.g. Apex Industrial Solutions"
-                value={addForm.legalName}
-                onChange={(e) => setAddForm((f) => ({ ...f, legalName: e.target.value }))}
-                className="h-8 text-xs bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Registered Domain *</label>
-              <Input
-                placeholder="e.g. apex-industrial.com"
-                value={addForm.registeredDomain}
-                onChange={(e) => setAddForm((f) => ({ ...f, registeredDomain: e.target.value }))}
-                className="h-8 text-xs font-mono bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Verified Phone Number</label>
-              <Input
-                placeholder="e.g. +1 (555) 019-2831"
-                value={addForm.knownPhone}
-                onChange={(e) => setAddForm((f) => ({ ...f, knownPhone: e.target.value }))}
-                className="h-8 text-xs font-mono bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Known Bank Account</label>
-              <Input
-                placeholder="e.g. 9876543210"
-                value={addForm.knownBankAccount}
-                onChange={(e) => setAddForm((f) => ({ ...f, knownBankAccount: e.target.value }))}
-                className="h-8 text-xs font-mono bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Contact Email</label>
-              <Input
-                placeholder="e.g. ap@apex-industrial.com"
-                value={addForm.contactEmail}
-                onChange={(e) => setAddForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                className="h-8 text-xs bg-white"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsAdding(false)}
-                className="h-8 text-xs font-semibold"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleAddVendor}
-                disabled={saving}
-                className="h-8 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {saving ? "Saving..." : "Add Vendor"}
-              </Button>
-            </div>
+          {/* Mode Switcher Tabs */}
+          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-xs font-bold my-1">
+            <button
+              type="button"
+              onClick={() => setAddMode('single')}
+              className={cn(
+                'rounded-lg py-1.5 transition-all cursor-pointer select-none',
+                addMode === 'single' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              )}
+            >
+              Single Entry
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddMode('csv')}
+              className={cn(
+                'rounded-lg py-1.5 transition-all cursor-pointer select-none flex items-center justify-center gap-1.5',
+                addMode === 'csv' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              )}
+            >
+              <Upload className="h-3.5 w-3.5 text-[#00668c]" />
+              Bulk CSV Import
+            </button>
           </div>
+
+          {addMode === 'single' ? (
+            <div className="flex flex-col gap-3 pt-2">
+              <div>
+                <label className="text-[11px] font-bold text-slate-700">Legal Company Name *</label>
+                <Input
+                  placeholder="e.g. Apex Industrial Solutions"
+                  value={addForm.legalName}
+                  onChange={(e) => setAddForm((f) => ({ ...f, legalName: e.target.value }))}
+                  className="h-8 text-xs bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-700">Registered Domain *</label>
+                <Input
+                  placeholder="e.g. apex-industrial.com"
+                  value={addForm.registeredDomain}
+                  onChange={(e) => setAddForm((f) => ({ ...f, registeredDomain: e.target.value }))}
+                  className="h-8 text-xs font-mono bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-700">Verified Phone Number</label>
+                <Input
+                  placeholder="e.g. +1 (555) 019-2831"
+                  value={addForm.knownPhone}
+                  onChange={(e) => setAddForm((f) => ({ ...f, knownPhone: e.target.value }))}
+                  className="h-8 text-xs font-mono bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-700">Known Bank Account</label>
+                <Input
+                  placeholder="e.g. 9876543210"
+                  value={addForm.knownBankAccount}
+                  onChange={(e) => setAddForm((f) => ({ ...f, knownBankAccount: e.target.value }))}
+                  className="h-8 text-xs font-mono bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-700">Contact Email</label>
+                <Input
+                  placeholder="e.g. ap@apex-industrial.com"
+                  value={addForm.contactEmail}
+                  onChange={(e) => setAddForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                  className="h-8 text-xs bg-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsAdding(false)}
+                  className="h-8 text-xs font-semibold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleAddVendor}
+                  disabled={saving}
+                  className="h-8 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {saving ? "Saving..." : "Add Vendor"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 py-2">
+              <label
+                htmlFor="vendor-csv-input"
+                className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition-all cursor-pointer hover:border-[#00668c] hover:bg-white"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-[#00668c]">
+                  <FileSpreadsheet className="h-5 w-5" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-slate-800">
+                    {csvFile ? csvFile.name : 'Click to select or drop vendor .csv file'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Supports vendor_master.csv with legalName, domain, phone, bank columns
+                  </span>
+                </div>
+                <input
+                  id="vendor-csv-input"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCsvSelect}
+                  className="hidden"
+                />
+              </label>
+
+              {parsedCsvVendors.length > 0 && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs text-emerald-800 font-bold flex items-center justify-between">
+                  <span>Detected {parsedCsvVendors.length} valid vendor records</span>
+                  <span className="text-[10px] text-emerald-600 font-normal">Ready to import</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsAdding(false)}
+                  className="h-8 text-xs font-semibold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleImportCsv}
+                  disabled={saving || !parsedCsvVendors.length}
+                  className="h-8 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {saving ? "Importing..." : `Import ${parsedCsvVendors.length} Vendors`}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

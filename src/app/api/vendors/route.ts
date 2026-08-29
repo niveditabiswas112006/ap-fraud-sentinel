@@ -88,53 +88,90 @@ export async function GET(req: Request) {
   return NextResponse.json({ items, total, page, limit: limitRaw });
 }
 
+import { writeFile, readFile } from 'node:fs/promises';
+import path from 'node:path';
+
 export async function POST(req: Request) {
-  let body: Record<string, unknown> = {};
+  let body: any = {};
   try {
-    body = (await req.json()) as Record<string, unknown>;
+    body = await req.json();
   } catch {
     return NextResponse.json({ error: 'invalid json' }, { status: 400 });
   }
 
-  const legalName = String(body.legalName ?? '').trim();
-  const registeredDomain = String(body.registeredDomain ?? '').trim();
-  const knownPhone = String(body.knownPhone ?? '').trim();
-  const knownBankAccount = String(body.knownBankAccount ?? '').trim();
-  const contactEmail = String(body.contactEmail ?? '').trim();
+  const vendorsList: Array<{
+    vendorId?: string;
+    legalName: string;
+    registeredDomain: string;
+    knownPhone?: string;
+    knownBankAccount?: string;
+    contactEmail?: string;
+    address?: string;
+    taxId?: string;
+  }> = Array.isArray(body) ? body : Array.isArray(body.vendors) ? body.vendors : [body];
 
-  if (!legalName || !registeredDomain) {
-    return NextResponse.json({ error: 'legalName and registeredDomain are required' }, { status: 400 });
+  if (!vendorsList.length) {
+    return NextResponse.json({ error: 'no vendor data provided' }, { status: 400 });
   }
 
   const existingCountRow = (await db.$queryRaw<Array<{ count: number }>>`SELECT COUNT(*) as count FROM "Vendor"`) as Array<{ count: number }>;
-  const count = Number(existingCountRow.at(0)?.count ?? 60);
-  const vendorId = body.vendorId ? String(body.vendorId).trim() : `V-${1001 + count}`;
+  let currentCount = Number(existingCountRow.at(0)?.count ?? 60);
   const today = new Date().toISOString().split('T')[0];
 
-  try {
-    await db.$executeRaw`
-      INSERT INTO "Vendor" (
-        "vendorId", "legalName", "registeredDomain", "knownPhone",
-        "knownBankAccount", "bankAccountAddedDate", "firstInvoiceDate",
-        "address", "contactEmail", "taxId"
-      ) VALUES (
-        ${vendorId}, ${legalName}, ${registeredDomain}, ${knownPhone || '+1 (555) 000-0000'},
-        ${knownBankAccount || '1234567890'}, ${today}, ${today},
-        '100 Enterprise Way', ${contactEmail || `ap@${registeredDomain}`}, 'XX-XXXXXXX'
-      )
-    `;
+  const addedVendors: any[] = [];
+  const csvRowsToAppend: string[] = [];
 
-    return NextResponse.json({
-      ok: true,
-      vendor: {
-        vendorId,
-        legalName,
-        registeredDomain,
-        knownPhone,
-        knownBankAccount,
-      },
-    });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  for (const item of vendorsList) {
+    const legalName = String(item.legalName ?? '').trim();
+    const registeredDomain = String(item.registeredDomain ?? '').trim();
+    const knownPhone = String(item.knownPhone ?? '').trim();
+    const knownBankAccount = String(item.knownBankAccount ?? '').trim();
+    const contactEmail = String(item.contactEmail ?? '').trim();
+    const address = String(item.address ?? '100 Enterprise Way').trim();
+    const taxId = String(item.taxId ?? 'XX-XXXXXXX').trim();
+
+    if (!legalName || !registeredDomain) continue;
+
+    currentCount += 1;
+    const vendorId = item.vendorId ? String(item.vendorId).trim() : `V-${1000 + currentCount}`;
+
+    try {
+      await db.$executeRaw`
+        INSERT OR REPLACE INTO "Vendor" (
+          "vendorId", "legalName", "registeredDomain", "knownPhone",
+          "knownBankAccount", "bankAccountAddedDate", "firstInvoiceDate",
+          "address", "contactEmail", "taxId"
+        ) VALUES (
+          ${vendorId}, ${legalName}, ${registeredDomain}, ${knownPhone || '+1 (555) 000-0000'},
+          ${knownBankAccount || '1234567890'}, ${today}, ${today},
+          ${address}, ${contactEmail || `ap@${registeredDomain}`}, ${taxId}
+        )
+      `;
+
+      addedVendors.push({ vendorId, legalName, registeredDomain, knownPhone, knownBankAccount });
+      csvRowsToAppend.push(`${vendorId},"${legalName}",${registeredDomain},${knownPhone || '+1 (555) 000-0000'},${knownBankAccount || '1234567890'},${today},${today},"${address}",${contactEmail || `ap@${registeredDomain}`},${taxId}`);
+    } catch {
+      // Ignore individual row duplicate conflicts
+    }
   }
+
+  // Update data/vendor_master.csv on disk if new vendors were added
+  if (csvRowsToAppend.length > 0) {
+    try {
+      const csvPath = path.join(process.cwd(), 'data', 'vendor_master.csv');
+      const existingCsv = await readFile(csvPath, 'utf8').catch(() => '');
+      if (existingCsv) {
+        const updatedCsv = existingCsv.trim() + '\n' + csvRowsToAppend.join('\n') + '\n';
+        await writeFile(csvPath, updatedCsv, 'utf8');
+      }
+    } catch {
+      /* ignore file write error */
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    count: addedVendors.length,
+    vendors: addedVendors,
+  });
 }
