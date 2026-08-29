@@ -31,6 +31,7 @@ import type { CaseRecord } from '@/lib/types';
 const columnHelper = createColumnHelper<CaseRecord>();
 
 export function CasesView() {
+  const currency = useAppStore((s) => s.currency);
   const [status, setStatus] = useState('all');
   const [fraudType, setFraudType] = useState('all');
   const [search, setSearch] = useState('');
@@ -66,7 +67,7 @@ export function CasesView() {
         header: 'AMOUNT',
         cell: (info) => (
           <span className="font-mono text-xs font-bold text-slate-900">
-            {formatCurrency(info.getValue(), useAppStore.getState().currency)}
+            {formatCurrency(info.getValue(), currency)}
           </span>
         ),
       }),
@@ -78,33 +79,31 @@ export function CasesView() {
           const isMed = score >= 0.4;
           return (
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className={cn('h-full', isHigh ? 'bg-red-600' : isMed ? 'bg-amber-500' : 'bg-[#0284c7]')}
-                  style={{ width: `${Math.round(score * 100)}%` }}
-                />
-              </div>
-              <span className={cn('font-mono text-xs font-bold', isHigh ? 'text-red-600' : isMed ? 'text-amber-600' : 'text-[#0284c7]')}>
-                {score.toFixed(2)}
-              </span>
+              <span
+                className={cn(
+                  'h-2 w-2 rounded-full',
+                  isHigh ? 'bg-red-500' : isMed ? 'bg-amber-500' : 'bg-emerald-500',
+                )}
+              />
+              <span className="font-mono text-xs font-bold text-slate-900">{score.toFixed(2)}</span>
             </div>
           );
         },
       }),
       columnHelper.accessor('recommendation', {
-        header: 'STATUS',
+        header: 'RECOMMENDATION',
         cell: (info) => {
-          const rec = info.getValue();
-          if (rec === 'hold') {
-            return (
-              <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-[10px] font-extrabold text-red-700 border border-red-200">
-                FRAUD SUSPECTED
-              </span>
-            );
-          }
+          const isHold = info.getValue() === 'hold';
           return (
-            <span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-[10px] font-extrabold text-[#00668c] border border-sky-200">
-              CLEARED
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider',
+                isHold
+                  ? 'bg-red-100 text-red-700 border border-red-200'
+                  : 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+              )}
+            >
+              {info.getValue()}
             </span>
           );
         },
@@ -135,7 +134,7 @@ export function CasesView() {
         },
       }),
     ],
-    [selectCase],
+    [selectCase, currency],
   );
 
   const rows = data?.items ?? [];

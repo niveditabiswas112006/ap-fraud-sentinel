@@ -32,6 +32,9 @@ function fmtMoney(n: number) {
 }
 
 export function RunsView() {
+  const currency = useAppStore((state) => state.currency);
+  const currSymbol = currency === 'INR' ? '₹' : '$';
+
   const { data: runs, isLoading } = useRuns();
   const { data: truth } = useGroundTruth();
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -129,7 +132,7 @@ export function RunsView() {
               <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">CASES</TableHead>
               <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">HELD</TableHead>
               <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">FRAUD</TableHead>
-              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">$ SAVED</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">{currSymbol} SAVED</TableHead>
               <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">TOTAL COST</TableHead>
               <TableHead className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 py-3 text-right">DURATION</TableHead>
               <TableHead className="w-10"></TableHead>
@@ -166,8 +169,8 @@ export function RunsView() {
                 <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.casesProcessed.toLocaleString()}</TableCell>
                 <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.casesHeld}</TableCell>
                 <TableCell className="text-right font-mono text-xs font-bold text-slate-700">{r.fraudCaught}</TableCell>
-                <TableCell className="text-right font-mono text-xs font-bold text-slate-900">{fmtMoney(r.amountSavedUsd)}</TableCell>
-                <TableCell className="text-right font-mono text-xs font-bold text-slate-800">${r.totalUsd.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-900">{formatCurrency(r.amountSavedUsd, currency)}</TableCell>
+                <TableCell className="text-right font-mono text-xs font-bold text-slate-800">{formatCurrency(r.totalUsd, currency)}</TableCell>
                 <TableCell className="text-right font-mono text-xs text-slate-600">{Math.floor(r.durationS / 60)}m {Math.round(r.durationS % 60)}s</TableCell>
                 <TableCell className="text-slate-400"><ChevronDown className="h-4 w-4" /></TableCell>
               </TableRow>

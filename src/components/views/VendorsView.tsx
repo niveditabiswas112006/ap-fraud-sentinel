@@ -102,6 +102,9 @@ function parseVendorCsv(text: string) {
 }
 
 export function VendorsView() {
+  const currency = useAppStore((state) => state.currency);
+  const currSymbol = currency === 'INR' ? '₹' : '$';
+
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -306,8 +309,8 @@ export function VendorsView() {
                   <TableHead className="text-[11px] font-bold text-slate-500 uppercase">DOMAIN</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-500 uppercase">BANK (MASK)</TableHead>
                   <TableHead className="text-[11px] font-bold text-slate-500 uppercase">PAYMENTS</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">MEAN $</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">STD $</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">MEAN ({currSymbol})</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">STD ({currSymbol})</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -323,10 +326,10 @@ export function VendorsView() {
                     <TableCell className="font-mono text-xs text-slate-500">{maskedBank(v.knownBankAccount)}</TableCell>
                     <TableCell className="font-mono text-xs font-semibold text-slate-700">{v.paymentCount}</TableCell>
                     <TableCell className="font-mono text-xs font-bold text-slate-900">
-                      {formatCurrency(v.amountMean, useAppStore.getState().currency)}
+                      {formatCurrency(v.amountMean, currency)}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-slate-500">
-                      {formatCurrency(v.amountStd, useAppStore.getState().currency)}
+                      {formatCurrency(v.amountStd, currency)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -492,7 +495,7 @@ export function VendorsView() {
                         <TableCell><code className="font-mono text-xs">{p.paymentId}</code></TableCell>
                         <TableCell><code className="font-mono text-[11px] text-muted-foreground">{p.invoiceNumber}</code></TableCell>
                         <TableCell><code className="font-mono text-[11px]">{p.paidDate}</code></TableCell>
-                        <TableCell className="text-right font-mono text-xs">{formatCurrency(p.amountUsd, useAppStore.getState().currency)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs">{formatCurrency(p.amountUsd, currency)}</TableCell>
                         <TableCell className="text-xs">{p.currencyOriginal}</TableCell>
                       </TableRow>
                     ))}
