@@ -1,15 +1,13 @@
 'use client';
 
-// VendorsView — read-only table of all 60 vendors with payment stats. Clicking a row
-// opens a modal with the vendor's payment-history sparkline (recharts).
+// VendorsView — paginated vendor list with payment stats & bulk CSV import.
 
 import { useState, useEffect } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Building2, Search, Edit2, Save, X, Plus, Upload, FileSpreadsheet } from 'lucide-react';
+import { Building2, Search, Edit2, Save, X, Plus, Upload, FileText } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableHeader,
@@ -30,12 +28,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useVendors, useVendor } from '@/hooks/useDashboardData';
 import { useAppStore, formatCurrency } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import type { VendorRecord } from '@/lib/types';
 
 function maskedBank(acct?: string) {
   if (!acct) return '—';
-  if (acct.length <= 4) return acct.replace(/./g, '•');
-  return `${acct.slice(0, 4)}••••${acct.slice(-4)}`;
+  const clean = acct.trim();
+  if (clean.length <= 4) return clean;
+  return `•••• ${clean.slice(-4)}`;
 }
 
 function parseVendorCsv(text: string) {
@@ -111,6 +109,7 @@ export function VendorsView() {
   const [addMode, setAddMode] = useState<'single' | 'csv'>('single');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [parsedCsvVendors, setParsedCsvVendors] = useState<any[]>([]);
+
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     legalName: '',
@@ -157,13 +156,13 @@ export function VendorsView() {
       await queryClient.invalidateQueries({ queryKey: ['vendor', selected] });
       toast({
         title: 'Vendor Updated',
-        description: `Successfully updated ${editForm.legalName || selected}.`,
+        description: 'Vendor details updated successfully in SQLite database.',
       });
       setIsEditing(false);
-    } catch (e) {
+    } catch (err) {
       toast({
-        title: 'Update Failed',
-        description: e instanceof Error ? e.message : String(e),
+        title: 'Update Error',
+        description: err instanceof Error ? err.message : String(err),
         variant: 'destructive',
       });
     } finally {
@@ -187,18 +186,70 @@ export function VendorsView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(addForm),
       });
-      if (!res.ok) throw new Error('Failed to add vendor');
+      if (!res.ok) throw new Error('Failed to create vendor');
       await queryClient.invalidateQueries({ queryKey: ['vendors'] });
       toast({
         title: 'Vendor Added',
-        description: `Successfully added vendor ${addForm.legalName}.`,
+        description: `${addForm.legalName} registered as a ground-truth vendor.`,
       });
       setIsAdding(false);
-      setAddForm({ legalName: '', registeredDomain: '', knownPhone: '', knownBankAccount: '', contactEmail: '' });
-    } catch (e) {
+      setAddForm({
+        legalName: '',
+        registeredDomain: '',
+        knownPhone: '',
+        knownBankAccount: '',
+        contactEmail: '',
+      });
+    } catch (err) {
       toast({
-        title: 'Add Vendor Failed',
-        description: e instanceof Error ? e.message : String(e),
+        title: 'Error',
+        description: err instanceof Error ? err.message : String(err),
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCsvSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    const text = await file.text();
+    const rows = parseVendorCsv(text);
+    setParsedCsvVendors(rows);
+  };
+
+  const handleImportCsv = async () => {
+    if (!parsedCsvVendors.length) {
+      toast({
+        title: 'No vendor data found',
+        description: 'The CSV file did not contain valid vendor rows.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendors: parsedCsvVendors }),
+      });
+      if (!res.ok) throw new Error('Bulk CSV import failed');
+      const j = await res.json();
+      toast({
+        title: 'CSV Import Successful',
+        description: `Successfully imported ${j.count || parsedCsvVendors.length} vendors into database.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setIsAdding(false);
+      setCsvFile(null);
+      setParsedCsvVendors([]);
+    } catch (err) {
+      toast({
+        title: 'Import Error',
+        description: err instanceof Error ? err.message : String(err),
         variant: 'destructive',
       });
     } finally {
@@ -207,120 +258,138 @@ export function VendorsView() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="flex items-center gap-2 font-bold">
-              <Building2 className="h-4 w-4 text-[#7fb8d6]" />
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      {/* Search Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search vendors..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-xs bg-white border-slate-200"
+          />
+        </div>
+
+        <Button
+          onClick={() => setIsAdding(true)}
+          className="gap-2 rounded-full bg-[#00668c] hover:bg-[#005577] text-white text-xs font-extrabold px-5 py-2.5 shadow-sm cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Vendor</span>
+        </Button>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-[#00668c]" />
+            <h2 className="text-sm font-bold text-slate-800">
               Vendors ({data?.total ?? 0})
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="search vendors…"
-                  className="h-8 w-48 pl-7 text-xs"
-                />
-              </div>
-              <Button
-                size="sm"
-                onClick={() => setIsAdding(true)}
-                className="h-8 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Vendor
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-md border border-border/60">
+            </h2>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-3 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-muted/30">
+              <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[11px] uppercase">ID</TableHead>
-                  <TableHead className="text-[11px] uppercase">Legal name</TableHead>
-                  <TableHead className="text-[11px] uppercase">Domain</TableHead>
-                  <TableHead className="text-[11px] uppercase">Bank (mask)</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Payments</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Mean $</TableHead>
-                  <TableHead className="text-[11px] uppercase text-right">Std $</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">ID</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">LEGAL NAME</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">DOMAIN</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">BANK (MASK)</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">PAYMENTS</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">MEAN $</TableHead>
+                  <TableHead className="text-[11px] font-bold text-slate-500 uppercase">STD $</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="p-0"><Skeleton className="h-12 w-full rounded-none" /></TableCell></TableRow>
-                ) : (data?.items ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">No vendors.</TableCell></TableRow>
-                ) : (
-                  (data?.items ?? []).map((v: VendorRecord) => (
-                    <TableRow
-                      key={v.vendorId}
-                      onClick={() => {
-                        setSelected(v.vendorId);
-                        setIsEditing(false);
-                      }}
-                      className="cursor-pointer hover:bg-muted/30"
-                    >
-                      <TableCell><code className="font-mono text-xs">{v.vendorId}</code></TableCell>
-                      <TableCell className="text-xs">{v.legalName}</TableCell>
-                      <TableCell><code className="font-mono text-[11px] text-muted-foreground">{v.registeredDomain}</code></TableCell>
-                      <TableCell><code className="font-mono text-[11px]">{maskedBank(v.knownBankAccount)}</code></TableCell>
-                      <TableCell className="text-right font-mono text-xs">{v.paymentCount ?? 0}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{(v.amountMean ?? 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{(v.amountStd ?? 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))
+                {data?.items.map((v) => (
+                  <TableRow
+                    key={v.vendorId}
+                    onClick={() => setSelected(v.vendorId)}
+                    className="cursor-pointer hover:bg-sky-50/50 transition-colors"
+                  >
+                    <TableCell className="font-mono text-xs font-semibold text-slate-900">{v.vendorId}</TableCell>
+                    <TableCell className="text-xs font-medium text-slate-800">{v.legalName}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-600">{v.registeredDomain}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-500">{maskedBank(v.knownBankAccount)}</TableCell>
+                    <TableCell className="font-mono text-xs font-semibold text-slate-700">{v.paymentCount}</TableCell>
+                    <TableCell className="font-mono text-xs font-bold text-slate-900">
+                      {formatCurrency(v.amountMean, useAppStore.getState().currency)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-slate-500">
+                      {formatCurrency(v.amountStd, useAppStore.getState().currency)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {data?.items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-xs text-slate-500">
+                      No vendors found. Click &quot;+ Add Vendor&quot; to register vendors or import a .csv file.
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      <Dialog open={Boolean(selected)} onOpenChange={(o) => { if (!o) { setSelected(null); setIsEditing(false); } }}>
+      {/* Detail Sparkline Modal Dialog */}
+      <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelected(null); setIsEditing(false); } }}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader className="flex flex-row items-center justify-between pr-6">
-            <div>
-              <DialogTitle className="flex items-center gap-2 text-base">
-                <Building2 className="h-4 w-4 text-[#1f6c92]" />
-                {vendorDetail?.vendor.legalName ?? selected}
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                <code className="font-mono">{vendorDetail?.vendor.vendorId ?? selected}</code> ·{' '}
-                <code className="font-mono">{vendorDetail?.vendor.registeredDomain}</code>
-              </DialogDescription>
+          <DialogHeader>
+            <div className="flex items-center justify-between pr-6">
+              <div>
+                <DialogTitle className="text-base font-bold text-slate-900">
+                  {vendorDetail?.vendor.legalName ?? selected}
+                </DialogTitle>
+                <DialogDescription className="font-mono text-xs text-slate-500">
+                  {selected} · {vendorDetail?.vendor.registeredDomain}
+                </DialogDescription>
+              </div>
+
+              {!isEditing && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditing(true)}
+                  className="h-8 gap-1.5 text-xs font-bold text-[#00668c] border-sky-200 bg-sky-50 hover:bg-sky-100 cursor-pointer"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit Vendor
+                </Button>
+              )}
             </div>
-            <Button
-              size="sm"
-              variant={isEditing ? "ghost" : "outline"}
-              onClick={() => setIsEditing(!isEditing)}
-              className="h-8 gap-1.5 text-xs font-bold"
-            >
-              {isEditing ? <X className="h-3.5 w-3.5" /> : <Edit2 className="h-3.5 w-3.5 text-[#00668c]" />}
-              {isEditing ? "Cancel Edit" : "Edit Vendor"}
-            </Button>
           </DialogHeader>
 
           {vendorDetail && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6 py-2">
+              {/* Edit Mode inline form */}
               {isEditing ? (
-                <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Edit Vendor Attributes</h4>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 flex flex-col gap-3">
+                  <h3 className="text-xs font-extrabold text-[#00668c] flex items-center gap-1.5">
+                    <Edit2 className="h-3.5 w-3.5" /> Edit Vendor Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600">Legal Name</label>
+                      <label className="text-[10px] font-bold text-slate-600">Legal Name</label>
                       <Input
                         value={editForm.legalName}
                         onChange={(e) => setEditForm((f) => ({ ...f, legalName: e.target.value }))}
-                        className="h-8 text-xs font-medium bg-white"
+                        className="h-8 text-xs bg-white"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600">Registered Domain</label>
+                      <label className="text-[10px] font-bold text-slate-600">Registered Domain</label>
                       <Input
                         value={editForm.registeredDomain}
                         onChange={(e) => setEditForm((f) => ({ ...f, registeredDomain: e.target.value }))}
@@ -328,7 +397,7 @@ export function VendorsView() {
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600">Verified Phone</label>
+                      <label className="text-[10px] font-bold text-slate-600">Phone</label>
                       <Input
                         value={editForm.knownPhone}
                         onChange={(e) => setEditForm((f) => ({ ...f, knownPhone: e.target.value }))}
@@ -336,7 +405,7 @@ export function VendorsView() {
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600">Known Bank Account</label>
+                      <label className="text-[10px] font-bold text-slate-600">Bank Account</label>
                       <Input
                         value={editForm.knownBankAccount}
                         onChange={(e) => setEditForm((f) => ({ ...f, knownBankAccount: e.target.value }))}
@@ -344,12 +413,13 @@ export function VendorsView() {
                       />
                     </div>
                   </div>
+
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setIsEditing(false)}
-                      className="h-8 text-xs font-semibold"
+                      className="h-7 text-xs font-semibold"
                     >
                       Cancel
                     </Button>
@@ -357,100 +427,67 @@ export function VendorsView() {
                       size="sm"
                       onClick={handleSave}
                       disabled={saving}
-                      className="h-8 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white"
+                      className="h-7 gap-1.5 text-xs font-extrabold bg-[#00668c] hover:bg-[#005577] text-white cursor-pointer"
                     >
-                      <Save className="h-3.5 w-3.5" />
+                      <Save className="h-3 w-3" />
                       {saving ? "Saving..." : "Save Changes"}
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-xs">
                   <div>
-                    <div className="text-muted-foreground">Phone</div>
-                    <code className="font-mono">{vendorDetail.vendor.knownPhone}</code>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Phone</span>
+                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.knownPhone ?? '—'}</span>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Bank (known)</div>
-                    <code className="font-mono">{maskedBank(vendorDetail.vendor.knownBankAccount)}</code>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Bank Account</span>
+                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.knownBankAccount ?? '—'}</span>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Bank added</div>
-                    <code className="font-mono">{vendorDetail.vendor.bankAccountAddedDate}</code>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Contact Email</span>
+                    <span className="text-slate-700 font-bold">{vendorDetail.vendor.contactEmail ?? '—'}</span>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">First invoice</div>
-                    <code className="font-mono">{vendorDetail.vendor.firstInvoiceDate}</code>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Payments</div>
-                    <code className="font-mono">{vendorDetail.vendor.paymentCount ?? 0}</code>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Amount μ / σ</div>
-                    <code className="font-mono">
-                      {(vendorDetail.vendor.amountMean ?? 0).toFixed(2)} / {(vendorDetail.vendor.amountStd ?? 0).toFixed(2)}
-                    </code>
+                    <span className="text-slate-400 font-semibold block text-[10px] uppercase">Tax ID</span>
+                    <span className="font-mono text-slate-700 font-bold">{vendorDetail.vendor.taxId ?? '—'}</span>
                   </div>
                 </div>
               )}
 
+              {/* Sparkline Chart */}
               <div>
-                <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Payment history sparkline
-                </div>
-                <div className="h-44 w-full rounded-md border border-border/60 bg-card/40 p-2">
+                <h3 className="mb-3 text-xs font-bold text-slate-800">
+                  Payment History Sparkline ({vendorDetail.payments.length} Payments)
+                </h3>
+                <div className="h-48 w-full rounded-xl border border-slate-100 bg-slate-50/30 p-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={vendorDetail.payments.map((p) => ({ date: p.paidDate, amount: Number(p.amountUsd) }))}>
-                      <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: '#94a3b8', fontSize: 10 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#1f2937' }}
-                      />
-                      <YAxis
-                        tick={{ fill: '#94a3b8', fontSize: 10 }}
-                        tickFormatter={(v) => `$${v}`}
-                        tickLine={false}
-                        axisLine={false}
-                        width={48}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: 'rgba(15, 23, 42, 0.95)',
-                          border: '1px solid #1f2937',
-                          borderRadius: 6,
-                          fontSize: 12,
-                          color: '#e2e8f0',
-                        }}
-                        formatter={(v: number) => [`$${v.toFixed(2)}`, 'amount']}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="#1f6c92"
-                        strokeWidth={2}
-                        dot={{ fill: '#1f6c92', r: 2 }}
-                      />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="amount" stroke="#00668c" strokeWidth={2} dot={{ r: 3, fill: '#00668c' }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-md border border-border/60">
+              {/* Payments Table */}
+              <div>
+                <h3 className="mb-2 text-xs font-bold text-slate-800">Recent Payment Records</h3>
                 <Table>
-                  <TableHeader className="bg-muted/30">
+                  <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-[11px] uppercase">Payment</TableHead>
-                      <TableHead className="text-[11px] uppercase">Invoice</TableHead>
-                      <TableHead className="text-[11px] uppercase">Date</TableHead>
-                      <TableHead className="text-[11px] uppercase text-right">Amount</TableHead>
-                      <TableHead className="text-[11px] uppercase">Cur</TableHead>
+                      <TableHead className="text-[10px] font-bold">PAYMENT ID</TableHead>
+                      <TableHead className="text-[10px] font-bold">INVOICE #</TableHead>
+                      <TableHead className="text-[10px] font-bold">DATE</TableHead>
+                      <TableHead className="text-[10px] font-bold text-right">AMOUNT</TableHead>
+                      <TableHead className="text-[10px] font-bold">CURRENCY</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vendorDetail.payments.slice().reverse().slice(0, 12).map((p) => (
+                    {vendorDetail.payments.map((p) => (
                       <TableRow key={p.paymentId}>
                         <TableCell><code className="font-mono text-xs">{p.paymentId}</code></TableCell>
                         <TableCell><code className="font-mono text-[11px] text-muted-foreground">{p.invoiceNumber}</code></TableCell>
@@ -580,7 +617,7 @@ export function VendorsView() {
                 className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition-all cursor-pointer hover:border-[#00668c] hover:bg-white"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-[#00668c]">
-                  <FileSpreadsheet className="h-5 w-5" />
+                  <FileText className="h-5 w-5" />
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs font-bold text-slate-800">
